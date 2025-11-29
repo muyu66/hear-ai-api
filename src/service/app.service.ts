@@ -1,0 +1,144 @@
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { WordBookSummaryDto } from 'src/dto/word-book.dto';
+import { Lang } from 'src/enum/lang.enum';
+import { RememberMethod } from 'src/enum/remember-method.enum';
+import { User } from 'src/model/user.model';
+import { WordBook } from 'src/model/word-book.model';
+import { Repository } from 'typeorm';
+import { AuthService } from './auth.service';
+
+@Injectable()
+export class AppService {
+  private readonly logger = new Logger(AppService.name);
+
+  constructor(
+    private readonly authService: AuthService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(WordBook)
+    private wordBookRepository: Repository<WordBook>,
+  ) {}
+
+  async getWordBookSummary(userId: number): Promise<WordBookSummaryDto> {
+    const user = await this.authService.getUserProfile(userId);
+
+    // 今天需要背多少
+    // 单词本总共有多少
+    const totalCount = await this.wordBookRepository.countBy({
+      userId,
+    });
+    const todayCount =
+      (await this.getWordBooksQuery(userId, user.rememberMethod)?.getCount()) ||
+      0;
+    const tomorrowCount =
+      (await this.getWordBooksTomorrowQuery(
+        userId,
+        user.rememberMethod,
+      )?.getCount()) || 0;
+    return { totalCount, todayCount, tomorrowCount };
+  }
+
+  /**
+   * 获取此时的复习量
+   * @param userId
+   * @returns
+   */
+  async getWordBookToday(userId: number): Promise<number> {
+    const user = await this.authService.getUserProfile(userId);
+    return (
+      (await this.getWordBooksQuery(userId, user.rememberMethod)?.getCount()) ||
+      0
+    );
+  }
+
+  async getWordBooks(userId: number, limit: number) {
+    const user = await this.authService.getUserProfile(userId);
+
+    const query = this.getWordBooksQuery(userId, user.rememberMethod);
+    if (!query) {
+      return [];
+    }
+    return query.limit(limit).getMany();
+  }
+
+  getWordBooksQuery(userId: number, rememberMethod: RememberMethod) {
+    let fitlerSql = '';
+    if (rememberMethod === RememberMethod.POW) {
+      fitlerSql =
+        'NOW() > DATE_ADD(w.remembered_at, INTERVAL POW(w.remembered_count, 1.5) DAY)';
+    } else if (rememberMethod === RememberMethod.FC) {
+      fitlerSql =
+        'NOW() > DATE_ADD(remembered_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY)';
+    } else {
+      return null;
+    }
+    return this.wordBookRepository
+      .createQueryBuilder('w')
+      .where('w.userId = :userId', { userId })
+      .andWhere(fitlerSql);
+  }
+
+  getWordBooksTomorrowQuery(userId: number, rememberMethod: RememberMethod) {
+    let fitlerSql = '';
+    if (rememberMethod === RememberMethod.POW) {
+      fitlerSql =
+        'DATE_ADD(CURDATE(), INTERVAL 2 DAY) > DATE_ADD(w.remembered_at, INTERVAL POW(w.remembered_count, 1.5) DAY) and DATE_ADD(CURDATE(), INTERVAL 1 DAY) <= DATE_ADD(w.remembered_at, INTERVAL POW(w.remembered_count, 1.5) DAY)';
+    } else if (rememberMethod === RememberMethod.FC) {
+      fitlerSql =
+        'DATE_ADD(CURDATE(), INTERVAL 2 DAY) > DATE_ADD(remembered_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY) and DATE_ADD(CURDATE(), INTERVAL 1 DAY) <= DATE_ADD(remembered_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY)';
+    } else {
+      return null;
+    }
+    return this.wordBookRepository
+      .createQueryBuilder('w')
+      .where('w.userId = :userId', { userId })
+      .andWhere(fitlerSql);
+  }
+
+  async rememberWordBook(userId: number, word: string, hintCount: number) {
+    await this.wordBookRepository.increment(
+      { userId, word },
+      'rememberedCount',
+      1,
+    );
+    await this.wordBookRepository.increment(
+      { userId, word },
+      'hintCount',
+      hintCount,
+    );
+    await this.wordBookRepository.update(
+      { userId, word },
+      { rememberedAt: new Date() },
+    );
+  }
+
+  async delWordBook(userId: number, word: string) {
+    return this.wordBookRepository.delete({
+      userId,
+      word,
+    });
+  }
+
+  async existWordBook(userId: number, word: string) {
+    return this.wordBookRepository.existsBy({
+      userId,
+      word,
+    });
+  }
+
+  async addWordBook(userId: number, word: string, wordLang: Lang) {
+    const exist = await this.wordBookRepository.existsBy({ userId, word });
+    if (exist) {
+      throw new BadRequestException('已存在于单词本之中');
+    }
+    return this.wordBookRepository.insert({
+      userId,
+      word,
+      wordLang,
+      rememberedAt: new Date(),
+      rememberedCount: 0,
+      hintCount: 0,
+    });
+  }
+}

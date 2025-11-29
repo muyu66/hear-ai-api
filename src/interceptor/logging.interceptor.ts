@@ -1,0 +1,50 @@
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  Logger,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
+import { customAlphabet } from 'nanoid';
+import { Observable, tap } from 'rxjs';
+
+@Injectable()
+export class LoggingInterceptor implements NestInterceptor {
+  private readonly logger = new Logger('HTTP');
+
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const request = context.switchToHttp().getRequest<Request>();
+    const response = context.switchToHttp().getResponse<Response>();
+
+    const nanoid = customAlphabet('1234567890abcdef', 6);
+    const requestId = nanoid();
+    const startTime = Date.now();
+
+    const { method, originalUrl, query, ip } = request;
+    const body: unknown = request.body;
+
+    const maxLength = 500;
+
+    const safeBody =
+      body && Object.keys(body).length
+        ? JSON.stringify(body).slice(0, maxLength) +
+          (JSON.stringify(body).length > maxLength ? '...' : '')
+        : '';
+    const safeQuery =
+      query && Object.keys(query).length ? JSON.stringify(query) : '';
+
+    return next.handle().pipe(
+      tap(() => {
+        const duration = Date.now() - startTime;
+
+        const logRequest =
+          `[ID:${requestId}] [Status:${response.statusCode}] ${method} ${originalUrl}` +
+          (safeBody ? ` <- Body: ${safeBody}` : '') +
+          (safeQuery ? ` Query: ${safeQuery}` : '') +
+          ` IP: ${ip} (${duration}ms)`;
+        this.logger.debug(logRequest);
+      }),
+    );
+  }
+}
