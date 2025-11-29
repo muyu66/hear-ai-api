@@ -13,6 +13,7 @@ export class AuthProfileDto {
   wordsLevel!: WordsLevel;
   useMinute!: number;
   multiSpeaker!: boolean;
+  isWechat!: boolean;
 }
 
 export class AuthProfileUpdateDto {

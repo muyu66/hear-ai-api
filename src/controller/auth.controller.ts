@@ -30,6 +30,7 @@ export class AuthController {
       wordsLevel: user.wordsLevel,
       useMinute: user.useMinute,
       multiSpeaker: user.multiSpeaker,
+      isWechat: user.wechatOpenid != null,
     };
   }
 
@@ -50,6 +51,29 @@ export class AuthController {
       body.publicKeyBase64,
       body.signatureBase64,
       body.timestamp,
+      body.deviceInfo,
+    );
+  }
+
+  @Public()
+  @Post('sign_up_wechat')
+  async signUpWechat(
+    @Body()
+    body: {
+      account: string;
+      publicKeyBase64: string;
+      signatureBase64: string;
+      timestamp: string;
+      code: string;
+      deviceInfo?: string;
+    },
+  ) {
+    return this.authService.signUpWechat(
+      body.account,
+      body.publicKeyBase64,
+      body.signatureBase64,
+      body.timestamp,
+      body.code,
       body.deviceInfo,
     );
   }

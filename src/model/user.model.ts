@@ -19,6 +19,9 @@ export class User {
   @Column({ name: 'public_key' })
   publicKey!: string;
 
+  @Column({ name: 'public_key_expired_at' })
+  publicKeyExpiredAt!: Date;
+
   @Column({ name: 'device_info', type: 'text', nullable: true })
   deviceInfo?: string;
 
@@ -39,6 +42,12 @@ export class User {
 
   @Column({ name: 'multi_speaker' })
   multiSpeaker!: boolean;
+
+  @Column({ name: 'wechat_openid' })
+  wechatOpenid?: string;
+
+  @Column({ name: 'wechat_unionid' })
+  wechatUnionid?: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
