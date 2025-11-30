@@ -4,7 +4,6 @@ import { range, sampleSize, shuffle } from 'lodash';
 import { UserWordsPool } from 'src/model/user-words-pool.model';
 import { User } from 'src/model/user.model';
 import { Words } from 'src/model/words.model';
-import { BloomFilterService } from 'src/tool/bloom-filter';
 import { Repository } from 'typeorm';
 
 const MAX_RETRY = 5;
@@ -18,11 +17,10 @@ export class WordsService {
     private wordsRepository: Repository<Words>,
     @InjectRepository(UserWordsPool)
     private userWordsPoolRepository: Repository<UserWordsPool>,
-    private readonly bloomFilterService: BloomFilterService,
   ) {}
 
-  async getWords(user: User, after: number) {
-    const slicePool = await this.getSlicePool(user, after, 20);
+  async getWords(user: User) {
+    const slicePool = await this.getNewSlicePool(user, 20);
     if (slicePool.length === 0) {
       return [];
     }
@@ -51,9 +49,9 @@ export class WordsService {
 
   private async getPool(user: User, retry = 0): Promise<number[]> {
     // 生成randomMod范围内的randomCount个数字组成一个数组
-    const randomMod = 10;
-    const randomCount = 5;
-    const randomSubs = sampleSize(range(randomMod), randomCount);
+    const randomMod = 100;
+    const randomCount = 20;
+    const randomSubs = sampleSize(shuffle(range(randomMod)), randomCount);
 
     // 获取N个随机句子
     const wordsModels = await this.wordsRepository
@@ -67,12 +65,12 @@ export class WordsService {
       .getMany();
 
     // 去除用户已读的
-    const unreadWordsModels: Words[] = wordsModels.filter(
-      (wordsModel) =>
-        !this.bloomFilterService.hasRead(user.id + '', wordsModel.id + ''),
-    );
+    // const unreadWordsModels: Words[] = wordsModels.filter(
+    //   (wordsModel) =>
+    //     !this.bloomFilterService.hasRead(user.id + '', wordsModel.id + ''),
+    // );
 
-    const ids = unreadWordsModels.map((v) => v.id);
+    const ids = wordsModels.map((v) => v.id);
 
     if (ids.length === 0) {
       // 获取多次还是没有新数据 ，则返回 []
@@ -87,54 +85,63 @@ export class WordsService {
     return shuffle(ids);
   }
 
-  private async getSlicePool(
+  //  获取新池子
+  private async getNewSlicePool(
     user: User,
-    after: number,
     sliceCount: number,
   ): Promise<number[]> {
-    let pool: number[];
-
-    //  获取池子
-    const poolModel = await this.userWordsPoolRepository.findOne({
-      where: { userId: user.id },
-    });
-
-    if (poolModel == null) {
-      const newPool = await this.getPool(user);
-      await this.userWordsPoolRepository.save({
-        userId: user.id,
-        pool: newPool,
-        wordsLevel: user.wordsLevel,
-      });
-      pool = newPool;
-    } else {
-      pool = poolModel.pool;
-      // 如果after是池子的最后一位，也就是用户看完了池子
-      if (pool[pool.length - 1] === after || pool.length === 0) {
-        const newPool = await this.getPool(user);
-        await this.userWordsPoolRepository.update(
-          {
-            userId: user.id,
-          },
-          {
-            pool: newPool,
-            wordsLevel: user.wordsLevel,
-          },
-        );
-        pool = newPool;
-      } else {
-        // 去除用户已读的
-        pool = pool.filter((wordsId) => {
-          return !this.bloomFilterService.hasRead(user.id + '', wordsId + '');
-        });
-      }
-    }
-
-    // 找到 n 的索引
-    const index = pool.indexOf(after);
-    // 如果找不到，返回整个数组
-    if (index === -1) return pool.slice(0, sliceCount);
-    // 返回从该索引开始到末尾的子数组, 不要当前索引
-    return pool.slice(index + 1, index + 1 + sliceCount);
+    const newPool = await this.getPool(user);
+    return newPool.slice(0, sliceCount);
   }
+
+  // private async getSlicePool(
+  //   user: User,
+  //   after: number,
+  //   sliceCount: number,
+  // ): Promise<number[]> {
+  //   let pool: number[];
+
+  //   //  获取池子
+  //   const poolModel = await this.userWordsPoolRepository.findOne({
+  //     where: { userId: user.id },
+  //   });
+
+  //   if (poolModel == null) {
+  //     const newPool = await this.getPool(user);
+  //     await this.userWordsPoolRepository.save({
+  //       userId: user.id,
+  //       pool: newPool,
+  //       wordsLevel: user.wordsLevel,
+  //     });
+  //     pool = newPool;
+  //   } else {
+  //     pool = poolModel.pool;
+  //     // 如果after是池子的最后一位，也就是用户看完了池子
+  //     if (pool[pool.length - 1] === after || pool.length === 0) {
+  //       const newPool = await this.getPool(user);
+  //       await this.userWordsPoolRepository.update(
+  //         {
+  //           userId: user.id,
+  //         },
+  //         {
+  //           pool: newPool,
+  //           wordsLevel: user.wordsLevel,
+  //         },
+  //       );
+  //       pool = newPool;
+  //     } else {
+  //       // 去除用户已读的
+  //       pool = pool.filter((wordsId) => {
+  //         return !this.bloomFilterService.hasRead(user.id + '', wordsId + '');
+  //       });
+  //     }
+  //   }
+
+  //   // 找到 n 的索引
+  //   const index = pool.indexOf(after);
+  //   // 如果找不到，返回整个数组
+  //   if (index === -1) return pool.slice(0, sliceCount);
+  //   // 返回从该索引开始到末尾的子数组, 不要当前索引
+  //   return pool.slice(index + 1, index + 1 + sliceCount);
+  // }
 }

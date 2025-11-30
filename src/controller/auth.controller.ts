@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+} from '@nestjs/common';
+import _ from 'lodash';
 import { Auth } from 'src/decorator/auth.decorator';
 import { Public } from 'src/decorator/public.decorator';
 import {
@@ -93,5 +101,38 @@ export class AuthController {
       body.signatureBase64,
       body.timestamp,
     );
+  }
+
+  @Public()
+  @Post('device_session')
+  async createDeviceSession(
+    @Body()
+    body: {
+      deviceRandomId: string;
+      account: string;
+      signatureBase64: string;
+      timestamp: string;
+    },
+  ) {
+    if (_.isEmpty(body.deviceRandomId) || body.deviceRandomId.length !== 32) {
+      throw new BadRequestException('设备ID不合法');
+    }
+    return this.authService.createDeviceSession(
+      body.deviceRandomId,
+      body.account,
+      body.signatureBase64,
+      body.timestamp,
+    );
+  }
+
+  @Public()
+  @Get('device_session')
+  async getTokenByDeviceSession(
+    @Query('deviceSessionId') deviceSessionId: string,
+  ) {
+    if (_.isEmpty(deviceSessionId) || deviceSessionId.length !== 32) {
+      throw new BadRequestException('设备会话ID不合法');
+    }
+    return this.authService.getTokenByDeviceSession(deviceSessionId);
   }
 }

@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -17,6 +18,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from './config.service';
 import { lastValueFrom } from 'rxjs';
 import dayjs from 'dayjs';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 @Injectable()
 export class AuthService {
@@ -31,9 +33,35 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {
     this.wxAppId = this.configService.wxAppId ?? '';
     this.wxSecret = this.configService.wxSecret ?? '';
+  }
+
+  async createDeviceSession(
+    deviceSessionId: string,
+    account: string,
+    signatureBase64: string,
+    timestamp: string,
+  ) {
+    const { accessToken } = await this.signIn(
+      account,
+      signatureBase64,
+      timestamp,
+    );
+    await this.cacheManager.set(
+      `deviceSessionId:${deviceSessionId}`,
+      { accessToken },
+      60 * 5,
+    );
+  }
+
+  async getTokenByDeviceSession(deviceSessionId: string) {
+    const cached = await this.cacheManager.get<{
+      accessToken: string;
+    }>(`deviceSessionId:${deviceSessionId}`);
+    return { accessToken: cached?.accessToken };
   }
 
   async updateProfile(userId: number, body: AuthProfileUpdateDto) {
@@ -53,10 +81,10 @@ export class AuthService {
         wordsLevel: body.wordsLevel,
       },
     );
-    // 如果用户更新了 wordsLevel
-    if (body.wordsLevel != null && user.wordsLevel !== body.wordsLevel) {
-      await this.wordsService.cleanUserPool(userId);
-    }
+    // // 如果用户更新了 wordsLevel
+    // if (body.wordsLevel != null && user.wordsLevel !== body.wordsLevel) {
+    //   await this.wordsService.cleanUserPool(userId);
+    // }
   }
 
   async getUserProfile(userId: number): Promise<User> {

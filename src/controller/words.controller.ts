@@ -4,7 +4,6 @@ import {
   NotFoundException,
   Param,
   ParseBoolPipe,
-  ParseIntPipe,
   Post,
   Query,
   Res,
@@ -15,7 +14,6 @@ import { AuthDto } from 'src/dto/auth.dto';
 import { WordsDto } from 'src/dto/words.dto';
 import { AuthService } from 'src/service/auth.service';
 import { WordsService } from 'src/service/words.service';
-import { BloomFilterService } from 'src/tool/bloom-filter';
 import { md5 } from 'src/tool/tool';
 import { VoiceStore } from 'src/tool/voice-store';
 import { VoiceSpeaker } from 'src/tool/voice/voice-speaker';
@@ -25,18 +23,14 @@ export class WordsController {
   constructor(
     private readonly wordsService: WordsService,
     private readonly authService: AuthService,
-    private readonly bloomFilterService: BloomFilterService,
     private readonly voiceStore: VoiceStore,
     private readonly voiceSpeaker: VoiceSpeaker,
   ) {}
 
   @Get()
-  async getWords(
-    @Query('after', new ParseIntPipe()) after: number = 0,
-    @Auth() auth: AuthDto,
-  ): Promise<WordsDto[]> {
+  async getWords(@Auth() auth: AuthDto): Promise<WordsDto[]> {
     const user = await this.authService.getUserProfile(auth.userId);
-    const words = await this.wordsService.getWords(user, after);
+    const words = await this.wordsService.getWords(user);
     return words.map((item) => {
       return <WordsDto>{
         id: item.id,
@@ -46,10 +40,10 @@ export class WordsController {
     });
   }
 
-  @Post(':id/remember')
-  rememberWords(@Param('id') wordsId: number, @Auth() auth: AuthDto) {
-    this.bloomFilterService.markRead(auth.userId + '', wordsId + '');
-  }
+  // @Post(':id/remember')
+  // rememberWords(@Param('id') wordsId: number, @Auth() auth: AuthDto) {
+  //   this.bloomFilterService.markRead(auth.userId + '', wordsId + '');
+  // }
 
   @Post(':id/bad')
   async badWords(@Param('id') wordsId: number) {
