@@ -51,7 +51,7 @@ export class WordBookController {
 
   @Post()
   async postWordBooks(@Body() body: WordBookAddDto, @Auth() auth: AuthDto) {
-    await this.appService.addWordBook(auth.userId, body.word, Lang.ENG);
+    await this.appService.addWordBook(auth.userId, body.word, Lang.EN);
   }
 
   @Get('exist')

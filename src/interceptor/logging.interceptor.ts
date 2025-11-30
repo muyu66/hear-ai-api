@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { customAlphabet } from 'nanoid';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, catchError } from 'rxjs';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -25,7 +25,6 @@ export class LoggingInterceptor implements NestInterceptor {
     const body: unknown = request.body;
 
     const maxLength = 500;
-
     const safeBody =
       body && Object.keys(body).length
         ? JSON.stringify(body).slice(0, maxLength) +
@@ -37,13 +36,22 @@ export class LoggingInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(() => {
         const duration = Date.now() - startTime;
-
         const logRequest =
           `[ID:${requestId}] [Status:${response.statusCode}] ${method} ${originalUrl}` +
           (safeBody ? ` <- Body: ${safeBody}` : '') +
           (safeQuery ? ` Query: ${safeQuery}` : '') +
           ` IP: ${ip} (${duration}ms)`;
         this.logger.debug(logRequest);
+      }),
+      catchError((err: Error & { status?: number }) => {
+        const duration = Date.now() - startTime;
+        const logRequest =
+          `[ID:${requestId}] [Status:${response.statusCode || err.status || 500}] ${method} ${originalUrl}` +
+          (safeBody ? ` <- Body: ${safeBody}` : '') +
+          (safeQuery ? ` Query: ${safeQuery}` : '') +
+          ` IP: ${ip} (${duration}ms) [Error: ${err.message}]`;
+        this.logger.error(logRequest, err.stack);
+        throw err; // 继续抛出异常，让全局异常过滤器处理
       }),
     );
   }

@@ -122,11 +122,14 @@ export class AuthService {
     code: string,
     deviceInfo?: string,
   ) {
-    if (code == null) {
+    if (code == null || code === '') {
       throw new UnauthorizedException('微信授权码不能为空');
     }
 
     const { openid } = await this.getWechatTokenByCode(code);
+    if (openid == null || openid === '') {
+      throw new UnauthorizedException('微信授权失败');
+    }
     let user = await this.userRepository.findOneBy({
       wechatOpenid: openid,
     });
@@ -213,8 +216,15 @@ export class AuthService {
     // 拿 code 换 token
     const tokenUrl = `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${this.wxAppId}&secret=${this.wxSecret}&code=${code}&grant_type=authorization_code`;
     const tokenRes = await lastValueFrom(
-      this.httpService.get<{ access_token: string; openid: string }>(tokenUrl),
+      this.httpService.get<{
+        access_token?: string;
+        openid?: string;
+        errcode: number;
+      }>(tokenUrl),
     );
+    if (tokenRes.data.errcode > 0) {
+      throw new UnauthorizedException('微信授权失败');
+    }
     return {
       accessToken: tokenRes.data.access_token,
       openid: tokenRes.data.openid,
@@ -228,8 +238,12 @@ export class AuthService {
         nickname: string;
         headimgurl: string;
         unionid: string;
+        errcode: number;
       }>(userInfoUrl),
     );
+    if (userInfoRes.data.errcode > 0) {
+      throw new UnauthorizedException('微信授权失败');
+    }
     return {
       nickname: userInfoRes.data.nickname,
       avatar: userInfoRes.data.headimgurl,

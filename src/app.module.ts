@@ -28,9 +28,13 @@ import { VoiceStore } from './tool/voice-store';
 import { VoiceAliRequest } from './tool/voice/voice-ali-request';
 import { VoiceMurfRequest } from './tool/voice/voice-murf-request';
 import { VoiceSpeaker } from './tool/voice/voice-speaker';
+import { WelcomeWords } from './model/welcome-words.model';
+import { SplashController } from './controller/splash.controller';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
+    CacheModule.register(),
     HttpModule,
     ConfigModule,
     TypeOrmModule.forRootAsync({
@@ -57,6 +61,7 @@ import { VoiceSpeaker } from './tool/voice/voice-speaker';
       BloomFilterShard,
       UserWordsPool,
       Dict,
+      WelcomeWords,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -75,6 +80,7 @@ import { VoiceSpeaker } from './tool/voice/voice-speaker';
     AuthController,
     TaskController,
     WordBookController,
+    SplashController,
   ],
   providers: [
     AuthService,

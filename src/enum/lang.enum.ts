@@ -1,4 +1,4 @@
 export enum Lang {
-  CHS = 'chs',
-  ENG = 'eng',
+  ZH_CN = 'zh-CN',
+  EN = 'en',
 }

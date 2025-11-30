@@ -20,7 +20,7 @@ export class TaskController {
     if (this.configService.env !== 'development') {
       return;
     }
-    return this.addService.addWords(Lang.ENG, Lang.CHS, WordsLevel.VERY_EASY);
+    return this.addService.addWords(Lang.EN, Lang.ZH_CN, WordsLevel.VERY_EASY);
   }
 
   @Get('voices')

@@ -1,12 +1,19 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { WordBookSummaryDto } from 'src/dto/word-book.dto';
 import { Lang } from 'src/enum/lang.enum';
 import { RememberMethod } from 'src/enum/remember-method.enum';
-import { User } from 'src/model/user.model';
 import { WordBook } from 'src/model/word-book.model';
 import { Repository } from 'typeorm';
 import { AuthService } from './auth.service';
+import { WelcomeWords } from 'src/model/welcome-words.model';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import _ from 'lodash';
 
 @Injectable()
 export class AppService {
@@ -14,11 +21,35 @@ export class AppService {
 
   constructor(
     private readonly authService: AuthService,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    @InjectRepository(WelcomeWords)
+    private readonly welcomeWordsRepository: Repository<WelcomeWords>,
     @InjectRepository(WordBook)
-    private wordBookRepository: Repository<WordBook>,
+    private readonly wordBookRepository: Repository<WordBook>,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
+
+  async getCachedWelcomeWords(lang: Lang): Promise<string[]> {
+    const cacheKey = `welcome_words_${lang}`;
+
+    // 先尝试从缓存取
+    const cached = await this.cacheManager.get<string[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const welcomeWords = await this.welcomeWordsRepository.findBy({
+      wordsLang: lang,
+    });
+    const data = welcomeWords.map((v) => v.words);
+    // 写进缓存
+    await this.cacheManager.set(cacheKey, data, 60 * 30);
+    return data;
+  }
+
+  async getRandomWelcomeWords(lang: Lang): Promise<string> {
+    const words = await this.getCachedWelcomeWords(lang);
+    return _.shuffle(words)[0];
+  }
 
   async getWordBookSummary(userId: number): Promise<WordBookSummaryDto> {
     const user = await this.authService.getUserProfile(userId);
