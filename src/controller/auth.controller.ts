@@ -42,6 +42,17 @@ export class AuthController {
     };
   }
 
+  @Post('link_wechat')
+  async linkWechat(
+    @Body()
+    body: {
+      code: string;
+    },
+    @Auth() auth: AuthDto,
+  ) {
+    return this.authService.linkWechat(body.code, auth.userId);
+  }
+
   @Public()
   @Post('sign_up')
   async signUp(

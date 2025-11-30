@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   Logger,
@@ -142,6 +143,34 @@ export class AuthService {
     return this.verifyAndIssueAccessToken(user, signatureBase64, timestamp);
   }
 
+  async linkWechat(code: string, userId: number) {
+    if (code == null || code === '') {
+      throw new BadRequestException('微信授权码不能为空');
+    }
+    const { openid } = await this.getWechatTokenByCode(code);
+    if (openid == null || openid === '') {
+      throw new UnauthorizedException('微信授权失败');
+    }
+
+    const user = await this.userRepository.findOneBy({
+      id: userId,
+    });
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    } else if (user.wechatOpenid != null) {
+      throw new BadRequestException('微信已绑定其他账号');
+    }
+
+    await this.userRepository.update(
+      {
+        id: user.id,
+      },
+      {
+        wechatOpenid: openid,
+      },
+    );
+  }
+
   async signUpWechat(
     account: string,
     publicKeyBase64: string,
@@ -151,13 +180,13 @@ export class AuthService {
     deviceInfo?: string,
   ) {
     if (code == null || code === '') {
-      throw new UnauthorizedException('微信授权码不能为空');
+      throw new BadRequestException('微信授权码不能为空');
     }
-
     const { openid } = await this.getWechatTokenByCode(code);
     if (openid == null || openid === '') {
       throw new UnauthorizedException('微信授权失败');
     }
+
     let user = await this.userRepository.findOneBy({
       wechatOpenid: openid,
     });
