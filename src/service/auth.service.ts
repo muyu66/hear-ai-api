@@ -21,6 +21,7 @@ import { lastValueFrom } from 'rxjs';
 import dayjs from 'dayjs';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { ClientType } from 'src/constant/contant';
+import { generateCuteNickname } from 'cute-nickname';
 
 @Injectable()
 export class AuthService {
@@ -111,7 +112,7 @@ export class AuthService {
         account: data.account,
         publicKey: data.publicKeyBase64,
         publicKeyExpiredAt: dayjs().add(30, 'day').toDate(),
-        nickname: data.nickname ?? '匿名用户',
+        nickname: data.nickname ?? generateCuteNickname({ forcePrefix: true }),
         rememberMethod: RememberMethod.POW,
         wordsLevel: WordsLevel.EASY,
         deviceInfo: data.deviceInfo,
@@ -137,7 +138,6 @@ export class AuthService {
       user = await this.createUser({
         account,
         publicKeyBase64,
-        nickname: '匿名用户',
         deviceInfo,
       });
     }
@@ -202,7 +202,6 @@ export class AuthService {
       user = await this.createUser({
         account,
         publicKeyBase64,
-        nickname: '微信用户',
         deviceInfo,
         wechatOpenid: openid,
         wechatUnionid: undefined,

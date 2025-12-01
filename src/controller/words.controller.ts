@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   NotFoundException,
@@ -42,10 +43,14 @@ export class WordsController {
     });
   }
 
-  // @Post(':id/remember')
-  // rememberWords(@Param('id') wordsId: number, @Auth() auth: AuthDto) {
-  //   this.bloomFilterService.markRead(auth.userId + '', wordsId + '');
-  // }
+  @Post(':id/remember')
+  async rememberWords(
+    @Param('id') wordsId: number,
+    @Body() body: { hintCount: number },
+    @Auth() auth: AuthDto,
+  ) {
+    await this.wordsService.rememberWords(wordsId, body.hintCount, auth.userId);
+  }
 
   @Post(':id/bad')
   async badWords(@Param('id') wordsId: number) {

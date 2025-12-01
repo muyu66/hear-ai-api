@@ -92,10 +92,10 @@ export class AppService {
     let fitlerSql = '';
     if (rememberMethod === RememberMethod.POW) {
       fitlerSql =
-        'NOW() > DATE_ADD(w.remembered_at, INTERVAL POW(w.remembered_count, 1.5) DAY)';
+        'NOW() > DATE_ADD(w.updated_at, INTERVAL POW(w.remembered_count, 1.5) DAY)';
     } else if (rememberMethod === RememberMethod.FC) {
       fitlerSql =
-        'NOW() > DATE_ADD(remembered_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY)';
+        'NOW() > DATE_ADD(updated_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY)';
     } else {
       return null;
     }
@@ -109,10 +109,10 @@ export class AppService {
     let fitlerSql = '';
     if (rememberMethod === RememberMethod.POW) {
       fitlerSql =
-        'DATE_ADD(CURDATE(), INTERVAL 2 DAY) > DATE_ADD(w.remembered_at, INTERVAL POW(w.remembered_count, 1.5) DAY) and DATE_ADD(CURDATE(), INTERVAL 1 DAY) <= DATE_ADD(w.remembered_at, INTERVAL POW(w.remembered_count, 1.5) DAY)';
+        'DATE_ADD(CURDATE(), INTERVAL 2 DAY) > DATE_ADD(w.updated_at, INTERVAL POW(w.remembered_count, 1.5) DAY) and DATE_ADD(CURDATE(), INTERVAL 1 DAY) <= DATE_ADD(w.updated_at, INTERVAL POW(w.remembered_count, 1.5) DAY)';
     } else if (rememberMethod === RememberMethod.FC) {
       fitlerSql =
-        'DATE_ADD(CURDATE(), INTERVAL 2 DAY) > DATE_ADD(remembered_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY) and DATE_ADD(CURDATE(), INTERVAL 1 DAY) <= DATE_ADD(remembered_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY)';
+        'DATE_ADD(CURDATE(), INTERVAL 2 DAY) > DATE_ADD(updated_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY) and DATE_ADD(CURDATE(), INTERVAL 1 DAY) <= DATE_ADD(updated_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY)';
     } else {
       return null;
     }
@@ -135,7 +135,7 @@ export class AppService {
     );
     await this.wordBookRepository.update(
       { userId, word },
-      { rememberedAt: new Date() },
+      { currHintCount: hintCount },
     );
   }
 
@@ -168,7 +168,6 @@ export class AppService {
       word,
       wordLang,
       from,
-      rememberedAt: new Date(),
       rememberedCount: 0,
       hintCount: 0,
     });

@@ -31,6 +31,7 @@ import { VoiceStore } from './tool/voice-store';
 import { VoiceAliRequest } from './tool/voice/voice-ali-request';
 import { VoiceMurfRequest } from './tool/voice/voice-murf-request';
 import { VoiceSpeaker } from './tool/voice/voice-speaker';
+import { WordsHistory } from './model/words-history.model';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { VoiceSpeaker } from './tool/voice/voice-speaker';
       UserWordsPool,
       Dict,
       WelcomeWords,
+      WordsHistory,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

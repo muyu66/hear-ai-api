@@ -1,37 +1,27 @@
-import { Lang } from 'src/enum/lang.enum';
 import {
-  Entity,
   Column,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
-export class WordBook {
+export class WordsHistory {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column({ name: 'user_id' })
   userId!: number;
 
-  @Column()
-  word!: string;
-
-  @Column({ name: 'word_lang', type: 'enum', enum: Lang })
-  wordLang!: Lang;
-
-  /**
-   * 单词来源
-   */
-  @Column()
-  from!: string;
-
-  @Column({ name: 'remembered_count' })
-  rememberedCount!: number;
+  @Column({ name: 'words_id' })
+  wordsId!: number;
 
   @Column({ name: 'curr_hint_count' })
   currHintCount!: number;
+
+  @Column({ name: 'remembered_count' })
+  rememberedCount!: number;
 
   @Column({ name: 'hint_count' })
   hintCount!: number;

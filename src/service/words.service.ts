@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { range, sampleSize, shuffle } from 'lodash';
 import { UserWordsPool } from 'src/model/user-words-pool.model';
 import { User } from 'src/model/user.model';
+import { WordsHistory } from 'src/model/words-history.model';
 import { Words } from 'src/model/words.model';
 import { Repository } from 'typeorm';
 
@@ -17,6 +18,8 @@ export class WordsService {
     private wordsRepository: Repository<Words>,
     @InjectRepository(UserWordsPool)
     private userWordsPoolRepository: Repository<UserWordsPool>,
+    @InjectRepository(WordsHistory)
+    private wordsHistoryRepository: Repository<WordsHistory>,
   ) {}
 
   async getWords(user: User) {
@@ -92,6 +95,31 @@ export class WordsService {
   ): Promise<number[]> {
     const newPool = await this.getPool(user);
     return newPool.slice(0, sliceCount);
+  }
+
+  async rememberWords(wordsId: number, hintCount: number, userId: number) {
+    const history = await this.wordsHistoryRepository.findOneBy({
+      userId,
+      wordsId,
+    });
+    if (!history) {
+      await this.wordsHistoryRepository.insert({
+        userId,
+        wordsId,
+        currHintCount: hintCount,
+        rememberedCount: 1,
+        hintCount,
+      });
+    } else {
+      await this.wordsHistoryRepository.update(
+        { userId, wordsId },
+        {
+          currHintCount: hintCount,
+          rememberedCount: history.rememberedCount + 1,
+          hintCount: history.hintCount + hintCount,
+        },
+      );
+    }
   }
 
   // private async getSlicePool(
