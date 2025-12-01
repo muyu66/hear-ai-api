@@ -83,6 +83,7 @@ export class AuthService {
         useMinute: body.useMinute,
         multiSpeaker: body.multiSpeaker,
         wordsLevel: body.wordsLevel,
+        sayRatio: body.sayRatio,
       },
     );
     // // 如果用户更新了 wordsLevel
@@ -118,6 +119,7 @@ export class AuthService {
         deviceInfo: data.deviceInfo,
         useMinute: 5,
         multiSpeaker: true,
+        sayRatio: 20,
         wechatOpenid: data.wechatOpenid,
         wechatUnionid: data.wechatUnionid,
       }),

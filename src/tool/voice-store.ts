@@ -51,6 +51,15 @@ export class VoiceStore {
     return stream;
   }
 
+  async getBuffer(fileName: string) {
+    const result = await this.client.get(fileName);
+    const buffer = result.content as Buffer;
+    if (buffer == null) {
+      return null;
+    }
+    return buffer;
+  }
+
   getFileName(wordsId: number, speaker: string, isSlow: boolean) {
     return `/speaker/${speaker}/words/${wordsId}/${isSlow ? 'voice_slow' : 'voice'}`;
   }

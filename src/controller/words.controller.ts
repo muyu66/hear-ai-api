@@ -9,6 +9,7 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
+import { randomInt } from 'crypto';
 import type { Response } from 'express';
 import { Auth } from 'src/decorator/auth.decorator';
 import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
@@ -39,6 +40,7 @@ export class WordsController {
         id: item.id,
         words: item.source,
         translation: item.target,
+        type: randomInt(1, 101) <= user.sayRatio ? 'say' : 'listen',
       };
     });
   }

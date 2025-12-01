@@ -42,6 +42,7 @@ export class AuthController {
       useMinute: user.useMinute,
       multiSpeaker: user.multiSpeaker,
       isWechat: user.wechatOpenid != null,
+      sayRatio: user.sayRatio,
     };
   }
 

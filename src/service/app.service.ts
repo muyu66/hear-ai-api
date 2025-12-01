@@ -170,6 +170,7 @@ export class AppService {
       from,
       rememberedCount: 0,
       hintCount: 0,
+      currHintCount: 0,
     });
     return true;
   }

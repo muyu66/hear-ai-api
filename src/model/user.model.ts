@@ -43,6 +43,9 @@ export class User {
   @Column({ name: 'multi_speaker' })
   multiSpeaker!: boolean;
 
+  @Column({ name: 'say_ratio' })
+  sayRatio!: number;
+
   @Column({ name: 'wechat_openid' })
   wechatOpenid?: string;
 

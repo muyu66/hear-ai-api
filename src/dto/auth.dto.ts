@@ -1,4 +1,4 @@
-import { IsOptional, Length } from 'class-validator';
+import { IsOptional, Length, Max, Min } from 'class-validator';
 import { ClientType } from 'src/constant/contant';
 import { RememberMethod } from 'src/enum/remember-method.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
@@ -16,6 +16,7 @@ export class AuthProfileDto {
   useMinute!: number;
   multiSpeaker!: boolean;
   isWechat!: boolean;
+  sayRatio!: number;
 }
 
 export class AuthProfileUpdateDto {
@@ -30,6 +31,10 @@ export class AuthProfileUpdateDto {
   multiSpeaker?: boolean;
   @IsOptional()
   wordsLevel?: WordsLevel;
+  @IsOptional()
+  @Max(100)
+  @Min(0)
+  sayRatio?: number;
 }
 
 export class RegisterDto {
