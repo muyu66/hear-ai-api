@@ -41,8 +41,7 @@ export class AuthGuard implements CanActivate {
 
     // 尝试从 Header 或 Query 获取 token
     const tokenFromHeader = this.extractTokenFromHeader(request);
-    const tokenFromQuery = this.extractTokenFromQuery(request);
-    const token = tokenFromHeader || tokenFromQuery;
+    const token = tokenFromHeader;
 
     if (!token) {
       throw new UnauthorizedException('未发现令牌');
