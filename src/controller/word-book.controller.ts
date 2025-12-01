@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
-import { AppService } from 'src/service/app.service';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { Auth } from 'src/decorator/auth.decorator';
+import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
 import { AuthDto } from 'src/dto/auth.dto';
 import {
   WordBookAddDto,
@@ -9,8 +9,8 @@ import {
   WordBookSummaryDto,
 } from 'src/dto/word-book.dto';
 import { Lang } from 'src/enum/lang.enum';
+import { AppService } from 'src/service/app.service';
 import { WordService } from 'src/service/word.service';
-import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
 
 @ClientAllowed('android')
 @Controller('word_books')
@@ -59,6 +59,7 @@ export class WordBookController {
       auth.userId,
       body.word,
       Lang.EN,
+      auth.clientType,
     );
     return { result };
   }

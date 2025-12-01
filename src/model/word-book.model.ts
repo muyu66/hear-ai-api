@@ -21,6 +21,12 @@ export class WordBook {
   @Column({ name: 'word_lang', type: 'enum', enum: Lang })
   wordLang!: Lang;
 
+  /**
+   * 单词来源
+   */
+  @Column()
+  from!: string;
+
   @Column({ name: 'remembered_at' })
   rememberedAt: Date;
 

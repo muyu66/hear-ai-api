@@ -1,10 +1,11 @@
 import { IsOptional, Length } from 'class-validator';
+import { ClientType } from 'src/constant/contant';
 import { RememberMethod } from 'src/enum/remember-method.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
 
 export class AuthDto {
   userId!: number;
-  clientType!: 'android' | 'chrome';
+  clientType!: ClientType;
 }
 
 export class AuthProfileDto {
@@ -50,5 +51,5 @@ export class JwtPayload {
   sub: number; // 用户ID
   userId: number;
   type: 'access';
-  clientType: 'android' | 'chrome';
+  clientType: ClientType;
 }

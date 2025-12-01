@@ -115,6 +115,7 @@ export class AuthController {
       body.account,
       body.signatureBase64,
       body.timestamp,
+      'android',
     );
   }
 

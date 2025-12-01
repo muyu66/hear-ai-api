@@ -153,7 +153,12 @@ export class AppService {
     });
   }
 
-  async addWordBook(userId: number, word: string, wordLang: Lang) {
+  async addWordBook(
+    userId: number,
+    word: string,
+    wordLang: Lang,
+    from: string,
+  ) {
     const exist = await this.wordBookRepository.existsBy({ userId, word });
     if (exist) {
       return false;
@@ -162,6 +167,7 @@ export class AppService {
       userId,
       word,
       wordLang,
+      from,
       rememberedAt: new Date(),
       rememberedCount: 0,
       hintCount: 0,

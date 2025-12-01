@@ -20,6 +20,7 @@ import { ConfigService } from './config.service';
 import { lastValueFrom } from 'rxjs';
 import dayjs from 'dayjs';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
+import { ClientType } from 'src/constant/contant';
 
 @Injectable()
 export class AuthService {
@@ -50,6 +51,7 @@ export class AuthService {
       account,
       signatureBase64,
       timestamp,
+      'chrome',
     );
     await this.cacheManager.set(
       `deviceSessionId:${deviceSessionId}`,
@@ -140,7 +142,12 @@ export class AuthService {
       });
     }
 
-    return this.verifyAndIssueAccessToken(user, signatureBase64, timestamp);
+    return this.verifyAndIssueAccessToken(
+      user,
+      signatureBase64,
+      timestamp,
+      'android',
+    );
   }
 
   async linkWechat(code: string, userId: number) {
@@ -211,10 +218,20 @@ export class AuthService {
       });
     }
 
-    return this.verifyAndIssueAccessToken(user, signatureBase64, timestamp);
+    return this.verifyAndIssueAccessToken(
+      user,
+      signatureBase64,
+      timestamp,
+      'android',
+    );
   }
 
-  async signIn(account: string, signatureBase64: string, timestamp: string) {
+  async signIn(
+    account: string,
+    signatureBase64: string,
+    timestamp: string,
+    clientType: ClientType,
+  ) {
     const user = await this.userRepository.findOneBy({
       account,
     });
@@ -222,13 +239,19 @@ export class AuthService {
       throw new NotFoundException('账号不存在');
     }
 
-    return this.verifyAndIssueAccessToken(user, signatureBase64, timestamp);
+    return this.verifyAndIssueAccessToken(
+      user,
+      signatureBase64,
+      timestamp,
+      clientType,
+    );
   }
 
   private verifyAndIssueAccessToken(
     user: User,
     signatureBase64: string,
     timestamp: string,
+    clientType: ClientType,
   ) {
     const publicKey = Buffer.from(user.publicKey, 'base64');
     const signature = Buffer.from(signatureBase64, 'base64');
@@ -256,16 +279,16 @@ export class AuthService {
     );
     if (!valid) throw new UnauthorizedException('无效的签名');
 
-    return this.issueAccessToken(user);
+    return this.issueAccessToken(user, clientType);
   }
 
   // 生成短期 accessToken
-  private issueAccessToken(user: User) {
+  private issueAccessToken(user: User, clientType: ClientType) {
     const jwtPayload: JwtPayload = {
       sub: user.id,
       userId: user.id,
       type: 'access',
-      clientType: 'android',
+      clientType,
     };
     const accessToken = this.jwtService.sign(jwtPayload, { expiresIn: '1d' });
 
