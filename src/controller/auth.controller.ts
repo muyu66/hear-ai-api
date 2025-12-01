@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import _ from 'lodash';
 import { Auth } from 'src/decorator/auth.decorator';
+import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
 import { Public } from 'src/decorator/public.decorator';
 import {
   AuthDto,
@@ -20,6 +21,7 @@ import { AuthService } from 'src/service/auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @ClientAllowed('android')
   @Post('profile')
   async updateProfile(
     @Auth() auth: AuthDto,
@@ -28,6 +30,7 @@ export class AuthController {
     return this.authService.updateProfile(auth.userId, body);
   }
 
+  @ClientAllowed('chrome', 'android')
   @Get('profile')
   async getProfile(@Auth() auth: AuthDto): Promise<AuthProfileDto> {
     const user = await this.authService.getUserProfile(auth.userId);
@@ -42,6 +45,7 @@ export class AuthController {
     };
   }
 
+  @ClientAllowed('android')
   @Post('link_wechat')
   async linkWechat(
     @Body()
@@ -114,22 +118,22 @@ export class AuthController {
     );
   }
 
-  @Public()
+  @ClientAllowed('android')
   @Post('device_session')
   async createDeviceSession(
     @Body()
     body: {
-      deviceRandomId: string;
+      deviceSessionId: string;
       account: string;
       signatureBase64: string;
       timestamp: string;
     },
   ) {
-    if (_.isEmpty(body.deviceRandomId) || body.deviceRandomId.length !== 32) {
-      throw new BadRequestException('设备ID不合法');
+    if (_.isEmpty(body.deviceSessionId) || body.deviceSessionId.length !== 32) {
+      throw new BadRequestException('设备会话ID不合法');
     }
     return this.authService.createDeviceSession(
-      body.deviceRandomId,
+      body.deviceSessionId,
       body.account,
       body.signatureBase64,
       body.timestamp,

@@ -21,7 +21,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const requestId = nanoid();
     const startTime = Date.now();
 
-    const { method, originalUrl, query, ip } = request;
+    const { method, originalUrl, ip } = request;
     const body: unknown = request.body;
 
     const maxLength = 500;
@@ -30,8 +30,6 @@ export class LoggingInterceptor implements NestInterceptor {
         ? JSON.stringify(body).slice(0, maxLength) +
           (JSON.stringify(body).length > maxLength ? '...' : '')
         : '';
-    const safeQuery =
-      query && Object.keys(query).length ? JSON.stringify(query) : '';
 
     return next.handle().pipe(
       tap(() => {
@@ -39,7 +37,6 @@ export class LoggingInterceptor implements NestInterceptor {
         const logRequest =
           `[ID:${requestId}] [Status:${response.statusCode}] ${method} ${originalUrl}` +
           (safeBody ? ` <- Body: ${safeBody}` : '') +
-          (safeQuery ? ` Query: ${safeQuery}` : '') +
           ` IP: ${ip} (${duration}ms)`;
         this.logger.debug(logRequest);
       }),
@@ -48,7 +45,6 @@ export class LoggingInterceptor implements NestInterceptor {
         const logRequest =
           `[ID:${requestId}] [Status:${response.statusCode || err.status || 500}] ${method} ${originalUrl}` +
           (safeBody ? ` <- Body: ${safeBody}` : '') +
-          (safeQuery ? ` Query: ${safeQuery}` : '') +
           ` IP: ${ip} (${duration}ms) [Error: ${err.message}]`;
         this.logger.error(logRequest, err.stack);
         throw err; // 继续抛出异常，让全局异常过滤器处理

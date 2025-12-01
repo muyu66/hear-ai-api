@@ -12,6 +12,7 @@ import { WordBookController } from './controller/word-book.controller';
 import { WordController } from './controller/word.controller';
 import { WordsController } from './controller/words.controller';
 import { AuthGuard } from './guard/auth.guard';
+import { ClientGuard } from './guard/client.guard';
 import { BloomFilterShard } from './model/bloom-filter-shard.model';
 import { Dict } from './model/dict.model';
 import { UserWordsPool } from './model/user-words-pool.model';
@@ -94,6 +95,10 @@ import { VoiceSpeaker } from './tool/voice/voice-speaker';
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ClientGuard,
     },
     // BloomFilterService,
     VoiceStore,

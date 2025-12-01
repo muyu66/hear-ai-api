@@ -10,9 +10,11 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { firstValueFrom } from 'rxjs';
+import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
 import { WordService } from 'src/service/word.service';
 import Stream from 'stream';
 
+@ClientAllowed('android')
 @Controller()
 export class WordController {
   constructor(

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthProfileUpdateDto } from 'src/dto/auth.dto';
+import { AuthProfileUpdateDto, JwtPayload } from 'src/dto/auth.dto';
 import { RememberMethod } from 'src/enum/remember-method.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
 import { User } from 'src/model/user.model';
@@ -54,7 +54,7 @@ export class AuthService {
     await this.cacheManager.set(
       `deviceSessionId:${deviceSessionId}`,
       { accessToken },
-      60 * 5,
+      1000 * 60 * 5,
     );
   }
 
@@ -261,10 +261,13 @@ export class AuthService {
 
   // 生成短期 accessToken
   private issueAccessToken(user: User) {
-    const accessToken = this.jwtService.sign(
-      { userId: user.id, type: 'access' },
-      { expiresIn: '1d' },
-    );
+    const jwtPayload: JwtPayload = {
+      sub: user.id,
+      userId: user.id,
+      type: 'access',
+      clientType: 'android',
+    };
+    const accessToken = this.jwtService.sign(jwtPayload, { expiresIn: '1d' });
 
     return { accessToken };
   }

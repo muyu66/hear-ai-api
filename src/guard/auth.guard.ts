@@ -10,7 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from 'src/decorator/public.decorator';
-import { AuthDto } from 'src/dto/auth.dto';
+import { AuthDto, JwtPayload } from 'src/dto/auth.dto';
 import { User } from 'src/model/user.model';
 import { ConfigService } from 'src/service/config.service';
 import { Repository } from 'typeorm';
@@ -49,12 +49,9 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync<{ userId: number }>(
-        token,
-        {
-          secret: this.configService.jwtSecret,
-        },
-      );
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+        secret: this.configService.jwtSecret,
+      });
 
       const user = await this.userRepository.findOneBy({ id: payload.userId });
       if (!user) {
@@ -62,7 +59,10 @@ export class AuthGuard implements CanActivate {
       }
 
       // 挂载用户信息到 request
-      request['user'] = { userId: payload.userId } satisfies AuthDto;
+      request['user'] = {
+        userId: payload.userId,
+        clientType: payload.clientType,
+      } satisfies AuthDto;
     } catch (error) {
       this.logger.error(error);
       throw new UnauthorizedException('无效的令牌');

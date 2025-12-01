@@ -1,19 +1,14 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import _ from 'lodash';
 import { WordBookSummaryDto } from 'src/dto/word-book.dto';
 import { Lang } from 'src/enum/lang.enum';
 import { RememberMethod } from 'src/enum/remember-method.enum';
+import { WelcomeWords } from 'src/model/welcome-words.model';
 import { WordBook } from 'src/model/word-book.model';
 import { Repository } from 'typeorm';
 import { AuthService } from './auth.service';
-import { WelcomeWords } from 'src/model/welcome-words.model';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import _ from 'lodash';
 
 @Injectable()
 export class AppService {
@@ -42,7 +37,7 @@ export class AppService {
     });
     const data = welcomeWords.map((v) => v.words);
     // 写进缓存
-    await this.cacheManager.set(cacheKey, data, 60 * 30);
+    await this.cacheManager.set(cacheKey, data, 1000 * 60 * 30);
     return data;
   }
 
@@ -161,9 +156,9 @@ export class AppService {
   async addWordBook(userId: number, word: string, wordLang: Lang) {
     const exist = await this.wordBookRepository.existsBy({ userId, word });
     if (exist) {
-      throw new BadRequestException('已存在于单词本之中');
+      return false;
     }
-    return this.wordBookRepository.insert({
+    await this.wordBookRepository.insert({
       userId,
       word,
       wordLang,
@@ -171,5 +166,6 @@ export class AppService {
       rememberedCount: 0,
       hintCount: 0,
     });
+    return true;
   }
 }

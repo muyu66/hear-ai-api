@@ -4,6 +4,7 @@ import { WordsLevel } from 'src/enum/words-level.enum';
 
 export class AuthDto {
   userId!: number;
+  clientType!: 'android' | 'chrome';
 }
 
 export class AuthProfileDto {
@@ -43,4 +44,11 @@ export class IssueRefreshDto {
   challengeId: string;
   signature: string; // base64
   deviceInfo?: string;
+}
+
+export class JwtPayload {
+  sub: number; // 用户ID
+  userId: number;
+  type: 'access';
+  clientType: 'android' | 'chrome';
 }

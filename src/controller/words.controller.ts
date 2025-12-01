@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { Auth } from 'src/decorator/auth.decorator';
+import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
 import { AuthDto } from 'src/dto/auth.dto';
 import { WordsDto } from 'src/dto/words.dto';
 import { AuthService } from 'src/service/auth.service';
@@ -18,6 +19,7 @@ import { md5 } from 'src/tool/tool';
 import { VoiceStore } from 'src/tool/voice-store';
 import { VoiceSpeaker } from 'src/tool/voice/voice-speaker';
 
+@ClientAllowed('android')
 @Controller('words')
 export class WordsController {
   constructor(

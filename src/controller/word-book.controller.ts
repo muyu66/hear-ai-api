@@ -10,7 +10,9 @@ import {
 } from 'src/dto/word-book.dto';
 import { Lang } from 'src/enum/lang.enum';
 import { WordService } from 'src/service/word.service';
+import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
 
+@ClientAllowed('android')
 @Controller('word_books')
 export class WordBookController {
   constructor(
@@ -49,9 +51,16 @@ export class WordBookController {
     });
   }
 
+  // result=true 添加成功, =false 已经存在不用添加
+  @ClientAllowed('android', 'chrome')
   @Post()
   async postWordBooks(@Body() body: WordBookAddDto, @Auth() auth: AuthDto) {
-    await this.appService.addWordBook(auth.userId, body.word, Lang.EN);
+    const result = await this.appService.addWordBook(
+      auth.userId,
+      body.word,
+      Lang.EN,
+    );
+    return { result };
   }
 
   @Get('exist')
