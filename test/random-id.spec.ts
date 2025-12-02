@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 function data() {
-  return _.range(2000);
+  return _.range(400);
 }
 
 /**
@@ -33,14 +33,14 @@ describe('随机方法测试', () => {
     }
 
     // 控制台柱状图可视化
-    console.log('\n=== 模值分布柱状图 ===');
-    const maxCount = Math.max(...Object.values(counts));
-    for (const key of Object.keys(counts)) {
-      const count = counts[Number(key)];
-      // 按比例生成柱状符号
-      const barLength = Math.round((count / maxCount) * 50); // 最大 50 个 #
-      console.log(`${key}: ${'#'.repeat(barLength)} (${count})`);
-    }
+    // console.log('\n=== 模值分布柱状图 ===');
+    // const maxCount = Math.max(...Object.values(counts));
+    // for (const key of Object.keys(counts)) {
+    //   const count = counts[Number(key)];
+    //   // 按比例生成柱状符号
+    //   const barLength = Math.round((count / maxCount) * 50); // 最大 50 个 #
+    //   console.log(`${key}: ${'#'.repeat(barLength)} (${count})`);
+    // }
 
     const values = Object.values(counts);
     const mean = _.mean(values);

@@ -110,6 +110,9 @@ export class WordsService {
         rememberedCount: 1,
         rememberedAt: new Date(),
         hintCount,
+        repetitionZeroHintCount: 0,
+        easeFactor: 2.5,
+        lastRememberedAt: new Date(),
       });
     } else {
       await this.wordsHistoryRepository.update(
@@ -117,6 +120,8 @@ export class WordsService {
         {
           currHintCount: hintCount,
           rememberedCount: history.rememberedCount + 1,
+          // 注意顺序
+          lastRememberedAt: history.rememberedAt,
           rememberedAt: new Date(),
           hintCount: history.hintCount + hintCount,
         },

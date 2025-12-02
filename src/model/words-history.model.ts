@@ -1,3 +1,4 @@
+import { RememberModel } from 'src/interface/remember-model';
 import {
   Column,
   CreateDateColumn,
@@ -7,7 +8,7 @@ import {
 } from 'typeorm';
 
 @Entity()
-export class WordsHistory {
+export class WordsHistory implements RememberModel {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -26,8 +27,17 @@ export class WordsHistory {
   @Column({ name: 'remembered_at' })
   rememberedAt!: Date;
 
+  @Column({ name: 'last_remembered_at' })
+  lastRememberedAt!: Date;
+
   @Column({ name: 'hint_count' })
   hintCount!: number;
+
+  @Column({ name: 'repetition_zero_hint_count' })
+  repetitionZeroHintCount!: number;
+
+  @Column({ name: 'ease_factor' })
+  easeFactor!: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

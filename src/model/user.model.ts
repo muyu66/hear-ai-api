@@ -46,6 +46,15 @@ export class User {
   @Column({ name: 'say_ratio' })
   sayRatio!: number;
 
+  @Column({ name: 'target_retention' })
+  targetRetention!: number;
+
+  /**
+   * 个人遗忘曲线
+   */
+  @Column({ name: 'curr_stability' })
+  currStability?: number;
+
   @Column({ name: 'wechat_openid' })
   wechatOpenid?: string;
 

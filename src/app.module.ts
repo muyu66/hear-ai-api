@@ -32,9 +32,15 @@ import { VoiceAliRequest } from './tool/voice/voice-ali-request';
 import { VoiceMurfRequest } from './tool/voice/voice-murf-request';
 import { VoiceSpeaker } from './tool/voice/voice-speaker';
 import { WordsHistory } from './model/words-history.model';
+import { AlgorithmModule } from './tool/algorithm/algorithm.module';
+import { AlgorithmService } from './service/algorithm.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TaskService } from './service/task.service';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
+    AlgorithmModule,
     CacheModule.register(),
     HttpModule,
     ConfigModule,
@@ -85,6 +91,8 @@ import { WordsHistory } from './model/words-history.model';
     SplashController,
   ],
   providers: [
+    TaskService,
+    AlgorithmService,
     AuthService,
     ConfigService,
     WordsService,

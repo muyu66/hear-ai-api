@@ -17,6 +17,7 @@ export class AuthProfileDto {
   multiSpeaker!: boolean;
   isWechat!: boolean;
   sayRatio!: number;
+  targetRetention!: number;
 }
 
 export class AuthProfileUpdateDto {
@@ -35,6 +36,10 @@ export class AuthProfileUpdateDto {
   @Max(100)
   @Min(0)
   sayRatio?: number;
+  @IsOptional()
+  @Max(95)
+  @Min(80)
+  targetRetention?: number;
 }
 
 export class RegisterDto {

@@ -1,6 +1,6 @@
 export enum RememberMethod {
-  // 指数
-  POW = 'pow',
-  // 遗忘曲线
-  FC = 'fc',
+  SM2 = 'sm2',
+  AMSPLUS = 'amsplus',
+  ARSS = 'arss',
+  ST = 'st',
 }

@@ -84,6 +84,7 @@ export class AuthService {
         multiSpeaker: body.multiSpeaker,
         wordsLevel: body.wordsLevel,
         sayRatio: body.sayRatio,
+        targetRetention: body.targetRetention,
       },
     );
     // // 如果用户更新了 wordsLevel
@@ -114,12 +115,14 @@ export class AuthService {
         publicKey: data.publicKeyBase64,
         publicKeyExpiredAt: dayjs().add(30, 'day').toDate(),
         nickname: data.nickname ?? generateCuteNickname({ forcePrefix: true }),
-        rememberMethod: RememberMethod.POW,
+        rememberMethod: RememberMethod.SM2,
         wordsLevel: WordsLevel.EASY,
         deviceInfo: data.deviceInfo,
         useMinute: 5,
         multiSpeaker: true,
         sayRatio: 20,
+        targetRetention: 90,
+        currStability: 1.0,
         wechatOpenid: data.wechatOpenid,
         wechatUnionid: data.wechatUnionid,
       }),

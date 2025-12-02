@@ -1,13 +1,14 @@
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import dayjs from 'dayjs';
 import _ from 'lodash';
 import { WordBookSummaryDto } from 'src/dto/word-book.dto';
 import { Lang } from 'src/enum/lang.enum';
-import { RememberMethod } from 'src/enum/remember-method.enum';
 import { WelcomeWords } from 'src/model/welcome-words.model';
 import { WordBook } from 'src/model/word-book.model';
-import { Repository } from 'typeorm';
+import { And, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { AlgorithmService } from './algorithm.service';
 import { AuthService } from './auth.service';
 
 @Injectable()
@@ -21,6 +22,7 @@ export class AppService {
     @InjectRepository(WordBook)
     private readonly wordBookRepository: Repository<WordBook>,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly algorithmService: AlgorithmService,
   ) {}
 
   async getCachedWelcomeWords(lang: Lang): Promise<string[]> {
@@ -47,21 +49,26 @@ export class AppService {
   }
 
   async getWordBookSummary(userId: number): Promise<WordBookSummaryDto> {
-    const user = await this.authService.getUserProfile(userId);
-
-    // 今天需要背多少
-    // 单词本总共有多少
     const totalCount = await this.wordBookRepository.countBy({
       userId,
+      rememberedAt: And(MoreThanOrEqual(dayjs().toDate())),
     });
-    const todayCount =
-      (await this.getWordBooksQuery(userId, user.rememberMethod)?.getCount()) ||
-      0;
-    const tomorrowCount =
-      (await this.getWordBooksTomorrowQuery(
-        userId,
-        user.rememberMethod,
-      )?.getCount()) || 0;
+
+    const todayCount = await this.wordBookRepository.countBy({
+      userId,
+      rememberedAt: And(
+        MoreThanOrEqual(dayjs().toDate()),
+        LessThanOrEqual(dayjs().endOf('days').toDate()),
+      ),
+    });
+
+    const tomorrowCount = await this.wordBookRepository.countBy({
+      userId,
+      rememberedAt: And(
+        MoreThanOrEqual(dayjs().add(1, 'days').startOf('days').toDate()),
+        LessThanOrEqual(dayjs().add(1, 'days').endOf('days').toDate()),
+      ),
+    });
     return { totalCount, todayCount, tomorrowCount };
   }
 
@@ -71,72 +78,68 @@ export class AppService {
    * @returns
    */
   async getWordBookToday(userId: number): Promise<number> {
-    const user = await this.authService.getUserProfile(userId);
-    return (
-      (await this.getWordBooksQuery(userId, user.rememberMethod)?.getCount()) ||
-      0
-    );
+    return await this.wordBookRepository.countBy({
+      userId,
+      rememberedAt: And(
+        MoreThanOrEqual(dayjs().toDate()),
+        LessThanOrEqual(dayjs().endOf('days').toDate()),
+      ),
+    });
   }
 
-  async getWordBooks(userId: number, limit: number) {
-    const user = await this.authService.getUserProfile(userId);
-
-    const query = this.getWordBooksQuery(userId, user.rememberMethod);
-    if (!query) {
-      return [];
-    }
-    return query.limit(limit).getMany();
-  }
-
-  getWordBooksQuery(userId: number, rememberMethod: RememberMethod) {
-    let fitlerSql = '';
-    if (rememberMethod === RememberMethod.POW) {
-      fitlerSql =
-        'NOW() > DATE_ADD(w.updated_at, INTERVAL POW(w.remembered_count, 1.5) DAY)';
-    } else if (rememberMethod === RememberMethod.FC) {
-      fitlerSql =
-        'NOW() > DATE_ADD(updated_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY)';
-    } else {
-      return null;
-    }
-    return this.wordBookRepository
-      .createQueryBuilder('w')
-      .where('w.userId = :userId', { userId })
-      .andWhere(fitlerSql);
-  }
-
-  getWordBooksTomorrowQuery(userId: number, rememberMethod: RememberMethod) {
-    let fitlerSql = '';
-    if (rememberMethod === RememberMethod.POW) {
-      fitlerSql =
-        'DATE_ADD(CURDATE(), INTERVAL 2 DAY) > DATE_ADD(w.updated_at, INTERVAL POW(w.remembered_count, 1.5) DAY) and DATE_ADD(CURDATE(), INTERVAL 1 DAY) <= DATE_ADD(w.updated_at, INTERVAL POW(w.remembered_count, 1.5) DAY)';
-    } else if (rememberMethod === RememberMethod.FC) {
-      fitlerSql =
-        'DATE_ADD(CURDATE(), INTERVAL 2 DAY) > DATE_ADD(updated_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY) and DATE_ADD(CURDATE(), INTERVAL 1 DAY) <= DATE_ADD(updated_at, INTERVAL GREATEST(1, 1 + remembered_count*1.5 - hint_count * 0.1) * 1.5 * -LN(0.8) DAY)';
-    } else {
-      return null;
-    }
-    return this.wordBookRepository
-      .createQueryBuilder('w')
-      .where('w.userId = :userId', { userId })
-      .andWhere(fitlerSql);
+  async getWordBooks(userId: number, limit: number): Promise<WordBook[]> {
+    return await this.wordBookRepository.find({
+      where: {
+        userId,
+        rememberedAt: And(
+          MoreThanOrEqual(dayjs().toDate()),
+          LessThanOrEqual(dayjs().endOf('days').toDate()),
+        ),
+      },
+      take: limit,
+    });
   }
 
   async rememberWordBook(userId: number, word: string, hintCount: number) {
-    await this.wordBookRepository.increment(
-      { userId, word },
-      'rememberedCount',
-      1,
-    );
-    await this.wordBookRepository.increment(
-      { userId, word },
-      'hintCount',
-      hintCount,
-    );
-    await this.wordBookRepository.update(
-      { userId, word },
-      { currHintCount: hintCount, rememberedAt: new Date() },
-    );
+    const now = new Date();
+
+    const user = await this.authService.getUserProfile(userId);
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+    const model = await this.wordBookRepository.findOneBy({
+      userId,
+      word,
+      rememberedAt: LessThanOrEqual(now),
+    });
+    if (!model) {
+      throw new NotFoundException('无需复习');
+    }
+
+    // 在计算之前赋值
+    model.currHintCount = hintCount;
+    model.hintCount += hintCount;
+    model.rememberedAt = now;
+    model.rememberedCount += 1;
+
+    // 计算
+    const newModel = this.algorithmService.handle(model, user);
+    if (newModel == null) {
+      this.logger.error(
+        `算法计算失败 wordBookId=${model.id} rememberMethod=${user.rememberMethod}`,
+      );
+      // 回滚最基础算法
+      model.rememberedAt = dayjs(now).add(1, 'day').toDate();
+    }
+
+    // 在计算之后赋值, 以此指定某些安全字段可以覆盖
+    // 注意顺序
+    model.lastRememberedAt = model.rememberedAt;
+    model.rememberedAt = newModel!.rememberedAt;
+    model.easeFactor = newModel!.easeFactor;
+    model.repetitionZeroHintCount = newModel!.repetitionZeroHintCount;
+
+    await this.wordBookRepository.save(model);
   }
 
   async delWordBook(userId: number, word: string) {
@@ -171,6 +174,10 @@ export class AppService {
       rememberedCount: 0,
       hintCount: 0,
       currHintCount: 0,
+      rememberedAt: new Date(),
+      lastRememberedAt: new Date(),
+      repetitionZeroHintCount: 0,
+      easeFactor: 2.5,
     });
     return true;
   }
