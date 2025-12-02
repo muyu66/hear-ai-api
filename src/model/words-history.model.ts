@@ -23,6 +23,9 @@ export class WordsHistory {
   @Column({ name: 'remembered_count' })
   rememberedCount!: number;
 
+  @Column({ name: 'remembered_at' })
+  rememberedAt!: Date;
+
   @Column({ name: 'hint_count' })
   hintCount!: number;
 

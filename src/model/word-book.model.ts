@@ -30,6 +30,9 @@ export class WordBook {
   @Column({ name: 'remembered_count' })
   rememberedCount!: number;
 
+  @Column({ name: 'remembered_at' })
+  rememberedAt!: Date;
+
   @Column({ name: 'curr_hint_count' })
   currHintCount!: number;
 

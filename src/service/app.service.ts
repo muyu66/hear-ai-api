@@ -135,7 +135,7 @@ export class AppService {
     );
     await this.wordBookRepository.update(
       { userId, word },
-      { currHintCount: hintCount },
+      { currHintCount: hintCount, rememberedAt: new Date() },
     );
   }
 

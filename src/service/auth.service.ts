@@ -1,3 +1,5 @@
+import { HttpService } from '@nestjs/axios';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import {
   BadRequestException,
   Inject,
@@ -8,20 +10,18 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+import { generateCuteNickname } from 'cute-nickname';
+import dayjs from 'dayjs';
+import type { StringValue } from 'ms';
+import { lastValueFrom } from 'rxjs';
+import { ClientType } from 'src/constant/contant';
 import { AuthProfileUpdateDto, JwtPayload } from 'src/dto/auth.dto';
 import { RememberMethod } from 'src/enum/remember-method.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
 import { User } from 'src/model/user.model';
 import nacl from 'tweetnacl';
 import { Repository } from 'typeorm';
-import { WordsService } from './words.service';
-import { HttpService } from '@nestjs/axios';
 import { ConfigService } from './config.service';
-import { lastValueFrom } from 'rxjs';
-import dayjs from 'dayjs';
-import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
-import { ClientType } from 'src/constant/contant';
-import { generateCuteNickname } from 'cute-nickname';
 
 @Injectable()
 export class AuthService {
@@ -30,7 +30,6 @@ export class AuthService {
   private readonly wxSecret: string;
 
   constructor(
-    private readonly wordsService: WordsService,
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private readonly jwtService: JwtService,
@@ -53,6 +52,7 @@ export class AuthService {
       signatureBase64,
       timestamp,
       'chrome',
+      '14d',
     );
     await this.cacheManager.set(
       `deviceSessionId:${deviceSessionId}`,
@@ -232,6 +232,7 @@ export class AuthService {
     signatureBase64: string,
     timestamp: string,
     clientType: ClientType,
+    expiresIn: StringValue = '1d',
   ) {
     const user = await this.userRepository.findOneBy({
       account,
@@ -245,6 +246,7 @@ export class AuthService {
       signatureBase64,
       timestamp,
       clientType,
+      expiresIn,
     );
   }
 
@@ -253,6 +255,7 @@ export class AuthService {
     signatureBase64: string,
     timestamp: string,
     clientType: ClientType,
+    expiresIn: StringValue = '1d',
   ) {
     const publicKey = Buffer.from(user.publicKey, 'base64');
     const signature = Buffer.from(signatureBase64, 'base64');
@@ -280,18 +283,24 @@ export class AuthService {
     );
     if (!valid) throw new UnauthorizedException('无效的签名');
 
-    return this.issueAccessToken(user, clientType);
+    return this.issueAccessToken(user, clientType, expiresIn);
   }
 
   // 生成短期 accessToken
-  private issueAccessToken(user: User, clientType: ClientType) {
+  private issueAccessToken(
+    user: User,
+    clientType: ClientType,
+    expiresIn: StringValue = '1d',
+  ) {
     const jwtPayload: JwtPayload = {
       sub: user.id,
       userId: user.id,
       type: 'access',
       clientType,
     };
-    const accessToken = this.jwtService.sign(jwtPayload, { expiresIn: '1d' });
+    const accessToken = this.jwtService.sign(jwtPayload, {
+      expiresIn,
+    });
 
     return { accessToken };
   }

@@ -108,6 +108,7 @@ export class WordsService {
         wordsId,
         currHintCount: hintCount,
         rememberedCount: 1,
+        rememberedAt: new Date(),
         hintCount,
       });
     } else {
@@ -116,6 +117,7 @@ export class WordsService {
         {
           currHintCount: hintCount,
           rememberedCount: history.rememberedCount + 1,
+          rememberedAt: new Date(),
           hintCount: history.hintCount + hintCount,
         },
       );
