@@ -5,7 +5,7 @@ import { ReadStream } from 'fs';
 
 @Injectable()
 export class VoiceStore {
-  private readonly client: OSS;
+  private readonly client: OSS | null = null;
   private readonly logger = new Logger(VoiceStore.name);
 
   constructor(private readonly configService: ConfigService) {
@@ -21,6 +21,7 @@ export class VoiceStore {
   }
 
   async upload(fileName: string, file: Buffer) {
+    if (this.client == null) return;
     try {
       await this.client.put(fileName, file);
     } catch (e) {
@@ -30,6 +31,7 @@ export class VoiceStore {
   }
 
   async exist(fileName: string) {
+    if (this.client == null) return;
     try {
       await this.client.head(fileName);
       return true;
@@ -44,6 +46,7 @@ export class VoiceStore {
   }
 
   async getStream(fileName: string) {
+    if (this.client == null) return;
     const result = await this.client.getStream(fileName);
     const stream = result.stream as ReadStream;
     if (stream == null) {
@@ -53,6 +56,7 @@ export class VoiceStore {
   }
 
   async getBuffer(fileName: string) {
+    if (this.client == null) return;
     try {
       const result = await this.client.get(fileName);
       const buffer = result.content as Buffer;

@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 
 @Entity()
-export class Words {
+export class Sentence {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -35,8 +35,8 @@ export class Words {
   badScore!: number;
 
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

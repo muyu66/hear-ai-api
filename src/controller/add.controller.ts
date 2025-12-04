@@ -8,7 +8,7 @@ import { VoiceSpeaker } from 'src/tool/voice/voice-speaker';
 
 @Public()
 @Controller('add')
-export class TaskController {
+export class AddController {
   constructor(
     private readonly addService: AddService,
     private readonly configService: ConfigService,
@@ -32,12 +32,20 @@ export class TaskController {
     return this.addService.addVoices(speakerObj, 0);
   }
 
-  @Get('word_voices')
+  @Get('word-voices')
   async addWordVoice() {
     if (this.configService.env !== 'development') {
       return;
     }
     const speakerObj = this.voiceSpeaker.ALI_EVA;
     return this.addService.addWordVoices(speakerObj);
+  }
+
+  @Get('ai-dicts')
+  async addAiDict() {
+    if (this.configService.env !== 'development') {
+      return;
+    }
+    return this.addService.addAiDict();
   }
 }

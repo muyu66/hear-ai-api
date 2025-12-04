@@ -28,6 +28,9 @@ export class WordBook implements RememberModel {
   @Column()
   from!: string;
 
+  @Column({ name: 'bad_score' })
+  badScore!: number;
+
   @Column({ name: 'remembered_count' })
   rememberedCount!: number;
 
@@ -56,8 +59,8 @@ export class WordBook implements RememberModel {
   currThinkingTime!: number;
 
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

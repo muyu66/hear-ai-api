@@ -7,7 +7,7 @@ import { ConfigService } from 'src/service/config.service';
 
 @Injectable()
 export class VoiceAliRequest implements VoiceRequest {
-  private token: string;
+  private token: string = '';
 
   constructor(
     private readonly httpService: HttpService,

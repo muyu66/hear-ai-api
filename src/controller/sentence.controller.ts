@@ -13,29 +13,30 @@ import type { Response } from 'express';
 import { Auth } from 'src/decorator/auth.decorator';
 import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
 import { AuthDto } from 'src/dto/auth.dto';
-import { WordsDto } from 'src/dto/words.dto';
+import { SentenceDto } from 'src/dto/sentence.dto';
+import { RequiredParamPipe } from 'src/pipe/required-param.pipe';
 import { AuthService } from 'src/service/auth.service';
-import { WordsService } from 'src/service/words.service';
+import { SentenceService } from 'src/service/sentence.service';
 import { md5, randomAB } from 'src/tool/tool';
 import { VoiceStore } from 'src/tool/voice-store';
 import { VoiceSpeaker } from 'src/tool/voice/voice-speaker';
 
 @ClientAllowed('android')
-@Controller('words')
-export class WordsController {
+@Controller('sentences')
+export class SentenceController {
   constructor(
-    private readonly wordsService: WordsService,
+    private readonly sentenceService: SentenceService,
     private readonly authService: AuthService,
     private readonly voiceStore: VoiceStore,
     private readonly voiceSpeaker: VoiceSpeaker,
   ) {}
 
   @Get()
-  async getWords(@Auth() auth: AuthDto): Promise<WordsDto[]> {
+  async getSentences(@Auth() auth: AuthDto): Promise<SentenceDto[]> {
     const user = await this.authService.getUserProfile(auth.userId);
-    const words = await this.wordsService.getWords(user);
-    return words.map((item) => {
-      return <WordsDto>{
+    const sentences = await this.sentenceService.getSentences(user);
+    return sentences.map((item) => {
+      return <SentenceDto>{
         id: item.id,
         words: item.source,
         translation: item.target,
@@ -46,12 +47,12 @@ export class WordsController {
 
   @Post(':id/remember')
   async rememberWords(
-    @Param('id') wordsId: number,
+    @Param('id', new RequiredParamPipe()) sentenceId: number,
     @Body() body: { hintCount: number; thinkingTime: number },
     @Auth() auth: AuthDto,
   ) {
-    await this.wordsService.rememberWords(
-      wordsId,
+    await this.sentenceService.remember(
+      sentenceId,
       body.hintCount,
       body.thinkingTime,
       auth.userId,
@@ -59,13 +60,13 @@ export class WordsController {
   }
 
   @Post(':id/bad')
-  async badWords(@Param('id') wordsId: number) {
-    await this.wordsService.badWords(wordsId);
+  async badWords(@Param('id', new RequiredParamPipe()) sentenceId: number) {
+    await this.sentenceService.bad(sentenceId);
   }
 
-  @Get(':id/voice_stream')
-  async getVoiceByWordsId(
-    @Param('id') wordsId: number,
+  @Get(':id/pronunciation')
+  async getPronunciation(
+    @Param('id', new RequiredParamPipe()) sentenceId: number,
     @Query('slow', new ParseBoolPipe()) slow: boolean = false,
     @Auth() auth: AuthDto,
     @Res() res: Response,
@@ -77,7 +78,7 @@ export class WordsController {
         : this.voiceSpeaker.getDefaultName('words');
 
       const fileName = this.voiceStore.getFileName(
-        wordsId,
+        sentenceId,
         speaker,
         'words',
         slow,

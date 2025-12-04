@@ -49,23 +49,23 @@ export class AuthProfileUpdateDto {
 }
 
 export class RegisterDto {
-  publicKey: string; // base64
+  publicKey!: string; // base64
 }
 
 export class ChallengeDto {
-  account: string;
+  account!: string;
 }
 
 export class IssueRefreshDto {
-  account: string;
-  challengeId: string;
-  signature: string; // base64
+  account!: string;
+  challengeId!: string;
+  signature!: string; // base64
   deviceInfo?: string;
 }
 
 export class JwtPayload {
-  sub: number; // 用户ID
-  userId: number;
-  type: 'access';
-  clientType: ClientType;
+  sub!: number; // 用户ID
+  userId!: number;
+  type!: 'access';
+  clientType!: ClientType;
 }

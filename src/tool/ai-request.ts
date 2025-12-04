@@ -3,6 +3,33 @@ import OpenAI from 'openai';
 import { WordsLevel } from 'src/enum/words-level.enum';
 import { ConfigService } from 'src/service/config.service';
 
+const promptDictMaker = (words: string[]) => {
+  return `You are an English-Chinese dictionary assistant. 
+
+I will give you a list of English words. For each word, please provide:
+
+1. "word" - the English word itself
+2. "phonetic" - the pronunciation in phonetic symbols
+3. "translation" - detailed Chinese translation, following these rules:
+
+   - Group all meanings by part of speech (n., v., adj., adv., etc.).
+   - **Within each part of speech, merge all meanings into one line separated by commas.**
+   - Use \n to separate lines (each line is either one part of speech, short phrases, or domain meanings).
+   - Do not repeat part of speech labels unnecessarily.
+   - Do not include examples, phrases, or domain-specific meanings.
+
+Please return the result as a **JSON array** in this exact format:
+
+[
+  { "word": "example1", "phonetic": "phonetic1", "translation": "translation1" },
+  { "word": "example2", "phonetic": "phonetic2", "translation": "translation2" }
+]
+
+Do **not** include any text outside the JSON array.
+
+The words are: ${words.join(',')}`;
+};
+
 const promptWordsMaker = (
   num: number,
   level: WordsLevel,
@@ -199,6 +226,23 @@ export class AiRequest {
         {
           role: 'system',
           content: prompt,
+        },
+      ],
+      model: 'deepseek-chat',
+    });
+
+    return completion.choices[0].message.content || '[]';
+  }
+
+  // { "word": "example1", "phonetic": "phonetic1", "translation": "translation1" }[]
+  async requestDict(words: string[]): Promise<string> {
+    if (words.length === 0) throw new Error('words is empty');
+
+    const completion = await this.openai.chat.completions.create({
+      messages: [
+        {
+          role: 'system',
+          content: promptDictMaker(words),
         },
       ],
       model: 'deepseek-chat',

@@ -1,41 +1,38 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { range, sampleSize, shuffle } from 'lodash';
-import { UserWordsPool } from 'src/model/user-words-pool.model';
+import { SentenceHistory } from 'src/model/sentence-history.model';
+import { Sentence } from 'src/model/sentence.model';
 import { User } from 'src/model/user.model';
-import { WordsHistory } from 'src/model/words-history.model';
-import { Words } from 'src/model/words.model';
 import { Repository } from 'typeorm';
 
 const MAX_RETRY = 5;
 
 @Injectable()
-export class WordsService {
-  private readonly logger = new Logger(WordsService.name);
+export class SentenceService {
+  private readonly logger = new Logger(SentenceService.name);
 
   constructor(
-    @InjectRepository(Words)
-    private wordsRepository: Repository<Words>,
-    @InjectRepository(UserWordsPool)
-    private userWordsPoolRepository: Repository<UserWordsPool>,
-    @InjectRepository(WordsHistory)
-    private wordsHistoryRepository: Repository<WordsHistory>,
+    @InjectRepository(Sentence)
+    private sentenceRepository: Repository<Sentence>,
+    @InjectRepository(SentenceHistory)
+    private wordsHistoryRepository: Repository<SentenceHistory>,
   ) {}
 
-  async getWords(user: User) {
+  async getSentences(user: User) {
     const slicePool = await this.getNewSlicePool(user, 20);
     if (slicePool.length === 0) {
       return [];
     }
-    return this.wordsRepository
+    return this.sentenceRepository
       .createQueryBuilder('w')
       .where('w.id IN (:...ids)', { ids: slicePool })
       .orderBy(`FIELD(w.id, ${slicePool.join(',')})`)
       .getMany();
   }
 
-  async badWords(wordsId: number) {
-    await this.wordsRepository.increment(
+  async bad(wordsId: number) {
+    await this.sentenceRepository.increment(
       {
         id: wordsId,
       },
@@ -44,11 +41,11 @@ export class WordsService {
     );
   }
 
-  async cleanUserPool(userId: number) {
-    await this.userWordsPoolRepository.delete({
-      userId,
-    });
-  }
+  // async cleanUserPool(userId: number) {
+  //   await this.userWordsPoolRepository.delete({
+  //     userId,
+  //   });
+  // }
 
   private async getPool(user: User, retry = 0): Promise<number[]> {
     // 生成randomMod范围内的randomCount个数字组成一个数组
@@ -57,7 +54,7 @@ export class WordsService {
     const randomSubs = sampleSize(shuffle(range(randomMod)), randomCount);
 
     // 获取N个随机句子
-    const wordsModels = await this.wordsRepository
+    const wordsModels = await this.sentenceRepository
       .createQueryBuilder()
       .where(`id % ${randomMod} in (${randomSubs.join(',')})`)
       .andWhere('level = :wordsLevel', {
@@ -97,7 +94,7 @@ export class WordsService {
     return newPool.slice(0, sliceCount);
   }
 
-  async rememberWords(
+  async remember(
     wordsId: number,
     hintCount: number,
     thinkingTime: number,

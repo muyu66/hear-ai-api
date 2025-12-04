@@ -1,22 +1,21 @@
-export class WordBookDto {
+export class MyWordDto {
   word!: string;
   voice!: string;
   phonetic?: string;
   translation?: string;
-  type: 'source' | 'target';
+  type!: 'source' | 'target';
 }
 
-export class WordBookAddDto {
+export class AddMyWordDto {
   word!: string;
 }
 
-export class WordBookRememberDto {
-  word!: string;
+export class RememberWordDto {
   hintCount!: number;
   thinkingTime!: number;
 }
 
-export class WordBookSummaryDto {
+export class MyWordSummaryDto {
   totalCount!: number;
   currStability?: number;
   tomorrowCount!: number;

@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 
 @Entity()
-export class WordsHistory implements RememberModel {
+export class SentenceHistory implements RememberModel {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -46,8 +46,8 @@ export class WordsHistory implements RememberModel {
   currThinkingTime!: number;
 
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

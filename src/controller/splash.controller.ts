@@ -10,8 +10,8 @@ export class SplashController {
   constructor(private readonly appService: AppService) {}
 
   @Public()
-  @Get('random_words')
-  async getDict(@Param('lang') lang?: Lang): Promise<string[]> {
+  @Get('random-words')
+  async getRandomWords(@Param('lang') lang?: Lang): Promise<string[]> {
     const words = await this.appService.getRandomWelcomeWords(
       lang ?? Lang.ZH_CN,
     );

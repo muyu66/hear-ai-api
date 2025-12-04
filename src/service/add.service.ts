@@ -1,38 +1,57 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { WordsDto } from 'src/dto/words.dto';
+import { SentenceDto } from 'src/dto/sentence.dto';
 import { Lang } from 'src/enum/lang.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
-import { Words } from 'src/model/words.model';
+import { Sentence } from 'src/model/sentence.model';
 import { AiRequest } from 'src/tool/ai-request';
 import { md5, sleep } from 'src/tool/tool';
 import { VoiceStore } from 'src/tool/voice-store';
 import { formatBufferWavToOpus } from 'src/tool/voice/format';
 import { VoiceAliRequest } from 'src/tool/voice/voice-ali-request';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { WordTokenizer } from 'natural';
+import { AiDict } from 'src/model/ai-dict.model';
+import { promises as fs } from 'fs';
+import _ from 'lodash';
 
 @Injectable()
 export class AddService {
   private readonly logger = new Logger(AddService.name);
+  private readonly FILE_PATH_ADD_DICT = './last-id-add-dict.txt';
 
   constructor(
-    @InjectRepository(Words)
-    private wordsRepository: Repository<Words>,
+    @InjectRepository(Sentence)
+    private sentenceRepository: Repository<Sentence>,
+    @InjectRepository(AiDict)
+    private aiDictRepository: Repository<AiDict>,
     private readonly voiceAliRequest: VoiceAliRequest,
     private readonly aiRequest: AiRequest,
     private readonly voiceStore: VoiceStore,
   ) {}
+
+  async saveLastProcessedId(filePath: string, id: number) {
+    await fs.writeFile(filePath, id.toString(), 'utf-8');
+  }
+
+  async getLastProcessedId(filePath: string): Promise<number> {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      return parseInt(content, 10);
+    } catch {
+      return 0; // 文件不存在就从0开始
+    }
+  }
 
   async addWords(sourceLang: Lang, targetLang: Lang, level: WordsLevel) {
     for (let i = 0; i < 100; i++) {
       try {
         this.logger.debug(`开始添加单词 第${i}轮`);
         const wordsRaw = await this.aiRequest.requestWords(40, level);
-        console.log(wordsRaw);
-        const words = <WordsDto[]>JSON.parse(wordsRaw);
+        this.logger.debug(wordsRaw);
+        const words = <SentenceDto[]>JSON.parse(wordsRaw);
         const models = words.map((dto) => {
-          const model = new Words();
+          const model = new Sentence();
           model.source = dto.words;
           model.sourceLang = sourceLang;
           model.target = dto.translation;
@@ -42,7 +61,7 @@ export class AddService {
           model.badScore = 0;
           return model;
         });
-        await this.wordsRepository.upsert(models, {
+        await this.sentenceRepository.upsert(models, {
           conflictPaths: ['md5'],
         });
       } catch (e: any) {
@@ -62,7 +81,7 @@ export class AddService {
       this.logger.debug(
         `正在获取 Speaker=${speakerObj.name} Offset=${offset} 音频...`,
       );
-      const wordModel = await this.wordsRepository
+      const wordModel = await this.sentenceRepository
         .createQueryBuilder('w')
         .limit(1)
         .offset(offset)
@@ -144,7 +163,7 @@ export class AddService {
       this.logger.debug(
         `正在获取单词音频 Speaker=${speakerObj.name} Offset=${offset} 音频...`,
       );
-      const wordModel = await this.wordsRepository
+      const wordModel = await this.sentenceRepository
         .createQueryBuilder('w')
         .limit(1)
         .offset(offset)
@@ -213,6 +232,77 @@ export class AddService {
       await this.addWordVoicesCore(speakerObj, offset, done);
     } catch (e) {
       this.logger.error(e);
+    }
+  }
+
+  async addAiDict() {
+    let lastId = await this.getLastProcessedId(this.FILE_PATH_ADD_DICT);
+    const limit = 30;
+
+    while (true) {
+      this.logger.debug(`准备获取词典 lastId=${lastId} ...`);
+      const wordModels = await this.sentenceRepository
+        .createQueryBuilder('w')
+        .select(['w.source', 'w.id'])
+        .where('w.id > :lastId', { lastId })
+        .limit(limit)
+        .orderBy('w.id', 'ASC')
+        .getMany();
+
+      if (wordModels.length === 0) {
+        this.logger.debug(
+          `已经完成所有任务 wordModelsCount=${wordModels.length} lastId=${lastId} ...`,
+        );
+        break;
+      }
+      this.logger.debug(
+        `准备分词 wordModelsCount=${wordModels.length} lastId=${lastId} ...`,
+      );
+
+      const tokenizer = new WordTokenizer();
+      const words = tokenizer
+        .tokenize(wordModels.map((v) => v.source).join(' '))
+        .map((v) => v.toLowerCase());
+
+      const existWords = await this.aiDictRepository.find({
+        where: { word: In(words) },
+        select: ['word'],
+      });
+      const existSet = new Set(existWords.map((w) => w.word));
+      // 过滤并去重
+      const taskWords = Array.from(new Set(words)).filter(
+        (w) => !existSet.has(w),
+      );
+
+      this.logger.debug(
+        `准备获取单词 taskWordsCount=${taskWords.length} lastId=${lastId} ...`,
+      );
+
+      if (taskWords.length > 0) {
+        const raws = await this.aiRequest.requestDict(taskWords);
+        this.logger.debug(raws);
+        const objects = <
+          { word: string; phonetic: string; translation: string }[]
+        >JSON.parse(
+          raws
+            .trim()
+            // 去掉可能包裹的三引号或多余引号
+            .replace(/^```json/, '')
+            .replace(/```$/, ''),
+        );
+        const models = objects.map((object) => {
+          return new AiDict(object.word, object.phonetic, object.translation);
+        });
+        await this.aiDictRepository.insert(models);
+        this.logger.debug(
+          `已成功保存 taskWordsCount=${taskWords.length} lastId=${lastId} ...`,
+        );
+      }
+
+      const maxId = _.maxBy(wordModels, 'id')?.id;
+      lastId = maxId!;
+      this.logger.debug(`本轮最大ID maxId=${lastId} ...`);
+      await this.saveLastProcessedId(this.FILE_PATH_ADD_DICT, lastId);
     }
   }
 }

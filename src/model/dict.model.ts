@@ -3,10 +3,10 @@ import { Entity, Column, PrimaryColumn } from 'typeorm';
 @Entity('dict')
 export class Dict {
   @PrimaryColumn()
-  word: string;
+  word!: string;
 
   @Column({ type: 'int', name: 'bad_score', unsigned: true, default: 0 })
-  badScore: number;
+  badScore!: number;
 
   @Column({
     type: 'varchar',

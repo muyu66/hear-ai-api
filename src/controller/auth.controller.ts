@@ -49,7 +49,7 @@ export class AuthController {
   }
 
   @ClientAllowed('android')
-  @Post('link_wechat')
+  @Post('link-wechat')
   async linkWechat(
     @Body()
     body: {
@@ -61,7 +61,7 @@ export class AuthController {
   }
 
   @Public()
-  @Post('sign_up')
+  @Post('sign-up')
   async signUp(
     @Body()
     body: {
@@ -82,7 +82,7 @@ export class AuthController {
   }
 
   @Public()
-  @Post('sign_up_wechat')
+  @Post('sign-up-wechat')
   async signUpWechat(
     @Body()
     body: {
@@ -105,7 +105,7 @@ export class AuthController {
   }
 
   @Public()
-  @Post('sign_in')
+  @Post('sign-in')
   async signIn(
     @Body()
     body: {
@@ -123,7 +123,7 @@ export class AuthController {
   }
 
   @ClientAllowed('android')
-  @Post('device_session')
+  @Post('device-session')
   async createDeviceSession(
     @Body()
     body: {
@@ -145,7 +145,7 @@ export class AuthController {
   }
 
   @Public()
-  @Get('device_session')
+  @Get('device-session')
   async getTokenByDeviceSession(
     @Query('deviceSessionId') deviceSessionId: string,
   ) {
