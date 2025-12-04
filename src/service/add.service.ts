@@ -76,7 +76,7 @@ export class AddService {
         const taskModels = Array.from(new Set(uniqModels)).filter(
           (w) => !existMd5Set.has(w.md5),
         );
-        this.logger.debug(`去重后 第${i}轮 count=${models.length} ...`);
+        this.logger.debug(`去重后 第${i}轮 count=${taskModels.length} ...`);
 
         await this.sentenceRepository.save(taskModels);
         this.logger.debug(`保存成功 第${i}轮 ...`);

@@ -70,8 +70,9 @@ export class ARSSAlgorithmService implements IAlgorithm {
   train(
     history: RememberModel[],
     initialStability: number = 1.0, // 新词默认 S=1 天
-  ): number {
-    if (history.length === 0) return initialStability;
+  ): { currentS: number; memoryCurve: number[] } {
+    if (history.length === 0)
+      return { currentS: initialStability, memoryCurve: [] };
 
     // 按时间排序
     const sorted = [...history].sort(
@@ -95,11 +96,11 @@ export class ARSSAlgorithmService implements IAlgorithm {
 
       // 更新 Stability
       currentS = this.updateStability(currentS, R, rating);
-
       lastReviewTime = review.rememberedAt.getTime();
     }
+    const memoryCurve = this.generateMemoryCurve(currentS, 30);
 
-    return currentS;
+    return { currentS, memoryCurve };
   }
 
   mapHintCountToRating(hintCount: number): number {
@@ -114,5 +115,15 @@ export class ARSSAlgorithmService implements IAlgorithm {
     const w = [0.4, 0.6, 1.0, 1.5]; // 针对 rating 0~3 的 S 增长因子（可调）
     const factor = w[Math.min(rating, 3)];
     return S * (1 + factor * (1 - R));
+  }
+
+  // 根据 S 生成遗忘曲线数据
+  generateMemoryCurve(S: number, days = 30): number[] {
+    const P = Math.log(2) / (9 * S); // 遗忘速率
+    const data: number[] = [];
+    for (let t = 0; t <= days; t++) {
+      data.push(Math.exp(-P * t));
+    }
+    return data;
   }
 }

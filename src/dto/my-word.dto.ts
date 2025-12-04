@@ -20,4 +20,5 @@ export class MyWordSummaryDto {
   tomorrowCount!: number;
   nowCount!: number;
   todayDoneCount!: number;
+  memoryCurve?: number[];
 }

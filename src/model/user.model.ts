@@ -1,11 +1,11 @@
-import { WordsLevel } from 'src/enum/words-level.enum';
 import { RememberMethod } from 'src/enum/remember-method.enum';
+import { WordsLevel } from 'src/enum/words-level.enum';
 import {
-  Entity,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
@@ -50,11 +50,17 @@ export class User {
   targetRetention!: number;
 
   /**
-   * 个人遗忘曲线
+   * 个人遗忘曲线 稳定值
    * 默认值 1
    */
   @Column({ name: 'curr_stability', nullable: true })
   currStability?: number;
+
+  /**
+   * 个人遗忘曲线 30天变化
+   */
+  @Column({ name: 'memory_curve', nullable: true, type: 'json' })
+  memoryCurve?: number[];
 
   /**
    * 反转单词本比率
@@ -74,4 +80,42 @@ export class User {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
+
+  constructor(
+    account: string,
+    publicKey: string,
+    publicKeyExpiredAt: Date,
+    nickname: string,
+    rememberMethod: RememberMethod,
+    wordsLevel: WordsLevel,
+    useMinute: number,
+    multiSpeaker: boolean,
+    sayRatio: number,
+    targetRetention: number,
+    reverseWordBookRatio: number,
+    wechatOpenid?: string,
+    wechatUnionid?: string,
+    currStability?: number,
+    memoryCurve?: number[],
+    deviceInfo?: string,
+    avatar?: string,
+  ) {
+    this.account = account;
+    this.publicKey = publicKey;
+    this.publicKeyExpiredAt = publicKeyExpiredAt;
+    this.nickname = nickname;
+    this.avatar = avatar;
+    this.rememberMethod = rememberMethod;
+    this.wordsLevel = wordsLevel;
+    this.useMinute = useMinute;
+    this.multiSpeaker = multiSpeaker;
+    this.sayRatio = sayRatio;
+    this.targetRetention = targetRetention;
+    this.reverseWordBookRatio = reverseWordBookRatio;
+    this.wechatOpenid = wechatOpenid;
+    this.wechatUnionid = wechatUnionid;
+    this.currStability = currStability;
+    this.memoryCurve = memoryCurve;
+    this.deviceInfo = deviceInfo;
+  }
 }

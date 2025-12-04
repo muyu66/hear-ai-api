@@ -8,7 +8,7 @@ export class TaskService {
 
   constructor(private readonly algorithmService: AlgorithmService) {}
 
-  @Cron(CronExpression.EVERY_HOUR, {
+  @Cron(CronExpression.EVERY_10_MINUTES, {
     waitForCompletion: true,
   })
   async handleCron() {

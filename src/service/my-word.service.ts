@@ -56,6 +56,10 @@ export class MyWordService {
         user.rememberMethod === RememberMethod.ARSS
           ? (user.currStability ?? 1)
           : undefined,
+      memoryCurve:
+        user.rememberMethod === RememberMethod.ARSS
+          ? (user.memoryCurve ?? [])
+          : undefined,
     };
   }
 

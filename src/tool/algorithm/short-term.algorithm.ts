@@ -21,7 +21,7 @@ export class ShortTermAlgorithmService implements IAlgorithm {
 
   constructor() {}
 
-  train(): number {
+  train(): { currentS: number; memoryCurve: number[] } {
     throw new Error('Method not implemented.');
   }
 

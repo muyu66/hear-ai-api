@@ -41,7 +41,7 @@ export class DictService {
       badScore: model.badScore,
       // 统一加音标前后的 /，比如 /xxxx/
       phonetic:
-        model.phonetic != null
+        model.phonetic != null && model.phonetic.length > 0
           ? `/${model.phonetic.replace(/^\/+|\/+$/g, '')}/`
           : '',
       // 统一换行

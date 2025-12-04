@@ -15,7 +15,7 @@ export class ASMPlusAlgorithmService implements IAlgorithm {
   readonly supportTrain = false;
   constructor() {}
 
-  train(): number {
+  train(): { currentS: number; memoryCurve: number[] } {
     throw new Error('Method not implemented.');
   }
 

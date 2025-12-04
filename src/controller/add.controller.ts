@@ -20,7 +20,7 @@ export class AddController {
     if (this.configService.env !== 'development') {
       return;
     }
-    return this.addService.addSentences(Lang.EN, Lang.ZH_CN, WordsLevel.HARD);
+    return this.addService.addSentences(Lang.EN, Lang.ZH_CN, WordsLevel.EASY);
   }
 
   @Get('voices')

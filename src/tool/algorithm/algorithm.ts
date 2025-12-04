@@ -14,7 +14,7 @@ export interface IAlgorithm {
   train(
     history: RememberModel[],
     initialStability: number, // 新词默认 S=1 天
-  ): number;
+  ): { currentS: number; memoryCurve: number[] };
 }
 
 export const ALGORITHM = 'ALGORITHM';

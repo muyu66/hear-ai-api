@@ -62,12 +62,13 @@ export class AlgorithmService {
       });
       for (const algorithm of this.factory.getAlgorithms()) {
         if (!algorithm.supportTrain) continue;
-        const s = algorithm.train(history, user.currStability || 1.0);
+        const trainRes = algorithm.train(history, user.currStability || 1.0);
         await this.userRepository.update(user.id, {
-          currStability: s,
+          currStability: trainRes.currentS,
+          memoryCurve: trainRes.memoryCurve,
         });
         this.logger.debug(
-          `userId=${user.id}的遗忘曲线训练完成, currStability=${s}`,
+          `userId=${user.id}的遗忘曲线训练完成, currStability=${trainRes.currentS}, memoryCurveLen=${trainRes.memoryCurve.length}`,
         );
       }
     }
