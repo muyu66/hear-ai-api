@@ -43,14 +43,17 @@ export class AddService {
     }
   }
 
-  async addWords(sourceLang: Lang, targetLang: Lang, level: WordsLevel) {
-    for (let i = 0; i < 100; i++) {
+  async addSentences(sourceLang: Lang, targetLang: Lang, level: WordsLevel) {
+    let i = 1;
+    while (true) {
       try {
-        this.logger.debug(`开始添加单词 第${i}轮`);
-        const wordsRaw = await this.aiRequest.requestWords(40, level);
-        this.logger.debug(wordsRaw);
-        const words = <SentenceDto[]>JSON.parse(wordsRaw);
-        const models = words.map((dto) => {
+        this.logger.debug(`开始添加句子 第${i}轮 ...`);
+
+        const raw = await this.aiRequest.requestWords(40, level);
+        this.logger.debug(`AI返回原文数据 第${i}轮 ... ${raw}`);
+
+        const sentences = <SentenceDto[]>JSON.parse(raw);
+        const models = sentences.map((dto) => {
           const model = new Sentence();
           model.source = dto.words;
           model.sourceLang = sourceLang;
@@ -61,14 +64,27 @@ export class AddService {
           model.badScore = 0;
           return model;
         });
-        await this.sentenceRepository.upsert(models, {
-          conflictPaths: ['md5'],
+        this.logger.debug(`AI返回数据 第${i}轮 count=${models.length} ...`);
+
+        // 过滤并去重
+        const uniqModels = _.uniqBy(models, 'md5');
+        const existSentences = await this.sentenceRepository.find({
+          where: { md5: In(uniqModels.map((v) => v.md5)) },
+          select: ['md5'],
         });
-      } catch (e: any) {
-        this.logger.error(`单词 第${i}轮 异常`);
+        const existMd5Set = new Set(existSentences.map((w) => w.md5));
+        const taskModels = Array.from(new Set(uniqModels)).filter(
+          (w) => !existMd5Set.has(w.md5),
+        );
+        this.logger.debug(`去重后 第${i}轮 count=${models.length} ...`);
+
+        await this.sentenceRepository.save(taskModels);
+        this.logger.debug(`保存成功 第${i}轮 ...`);
+        i++;
+      } catch (e) {
+        this.logger.error(`添加句子 第${i}轮 异常`);
         this.logger.error(e);
       }
-      await sleep(2000);
     }
   }
 

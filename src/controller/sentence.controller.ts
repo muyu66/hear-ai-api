@@ -46,7 +46,7 @@ export class SentenceController {
   }
 
   @Post(':id/remember')
-  async rememberWords(
+  async remember(
     @Param('id', new RequiredParamPipe()) sentenceId: number,
     @Body() body: { hintCount: number; thinkingTime: number },
     @Auth() auth: AuthDto,
@@ -59,8 +59,8 @@ export class SentenceController {
     );
   }
 
-  @Post(':id/bad')
-  async badWords(@Param('id', new RequiredParamPipe()) sentenceId: number) {
+  @Post(':id/bad-feedback')
+  async bad(@Param('id', new RequiredParamPipe()) sentenceId: number) {
     await this.sentenceService.bad(sentenceId);
   }
 

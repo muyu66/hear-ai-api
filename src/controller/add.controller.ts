@@ -15,12 +15,12 @@ export class AddController {
     private readonly voiceSpeaker: VoiceSpeaker,
   ) {}
 
-  @Get('words')
-  async addWords() {
+  @Get('sentences')
+  async addSentences() {
     if (this.configService.env !== 'development') {
       return;
     }
-    return this.addService.addWords(Lang.EN, Lang.ZH_CN, WordsLevel.VERY_EASY);
+    return this.addService.addSentences(Lang.EN, Lang.ZH_CN, WordsLevel.HARD);
   }
 
   @Get('voices')

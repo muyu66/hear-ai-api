@@ -25,11 +25,12 @@ export class DictService {
   /** 根据字典类型获取对应 Repository */
   private getRepositories(): {
     dict: DictType;
+    dictName: string;
     repo: Repository<Dict | AiDict>;
   }[] {
     return [
-      { dict: 'ecdict', repo: this.dictRepository },
-      { dict: 'ai', repo: this.aiDictRepository },
+      { dict: 'ecdict', dictName: '内置词典', repo: this.dictRepository },
+      { dict: 'ai', dictName: 'AI词典', repo: this.aiDictRepository },
     ];
   }
 
@@ -38,8 +39,24 @@ export class DictService {
     return {
       word: model.word,
       badScore: model.badScore,
-      phonetic: model.phonetic || '',
-      translation: model.translation || '',
+      // 统一加音标前后的 /，比如 /xxxx/
+      phonetic:
+        model.phonetic != null
+          ? `/${model.phonetic.replace(/^\/+|\/+$/g, '')}/`
+          : '',
+      // 统一换行
+      translation:
+        model.translation != null
+          ? model.translation
+              .replace(/<br\s*\/?>/gi, '\n')
+              // 转义字符文本
+              .replace(/\\r\\n/g, '\n')
+              .replace(/\\n/g, '\n')
+              .replace(/\\r/g, '\n')
+              // 再统一一下 CRLF
+              .replace(/\r\n/g, '\n')
+              .replace(/\r/g, '\n')
+          : '',
     };
   }
 
@@ -62,14 +79,16 @@ export class DictService {
   /** 获取多个词典的单词 */
   async getDictsByWord(
     word: string,
-  ): Promise<{ [key in DictType]?: DictModel }> {
+  ): Promise<{ dict: DictType; dictName: string; model: DictModel }[]> {
     const repos = this.getRepositories();
-    const res: { [key in DictType]?: DictModel } = {};
-    for (const { repo, dict } of repos) {
+    const res: { dict: DictType; dictName: string; model: DictModel }[] = [];
+    for (const { repo, dict, dictName } of repos) {
       const model = await repo.findOneBy({ word });
       if (model == null) continue;
-      Object.assign(res, {
-        [dict]: this.toDictModel(model),
+      res.push({
+        dict,
+        dictName,
+        model: this.toDictModel(model),
       });
     }
     return res;

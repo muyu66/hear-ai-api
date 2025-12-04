@@ -6,7 +6,7 @@ import { RequiredParamPipe } from 'src/pipe/required-param.pipe';
 import { DictService } from 'src/service/dict.service';
 
 @ClientAllowed('android')
-@Controller()
+@Controller('dicts')
 export class DictController {
   constructor(private readonly dictService: DictService) {}
 
@@ -15,10 +15,10 @@ export class DictController {
    * @param word
    * @returns
    */
-  @Get('dicts/:word')
+  @Get(':word')
   async getDict(
     @Param('word', new RequiredParamPipe()) word: string,
-  ): Promise<{ [key in DictType]?: DictModel }> {
+  ): Promise<{ dict: DictType; dictName: string; model: DictModel }[]> {
     return this.dictService.getDictsByWord(word);
   }
 
@@ -27,8 +27,8 @@ export class DictController {
    * @param word
    * @returns
    */
-  @Post('dicts/:word/bad-feedback')
-  async badDict(
+  @Post(':word/bad-feedback')
+  async bad(
     @Param('word', new RequiredParamPipe()) word: string,
     @Body() body: { dict: DictType },
   ) {

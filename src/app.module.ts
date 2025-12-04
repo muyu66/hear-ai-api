@@ -32,7 +32,6 @@ import { ConfigService } from './service/config.service';
 import { MyWordService } from './service/my-word.service';
 import { SentenceService } from './service/sentence.service';
 import { TaskService } from './service/task.service';
-import { WordService } from './service/word.service';
 import { AiRequest } from './tool/ai-request';
 import { AlgorithmModule } from './tool/algorithm/algorithm.module';
 import { VoiceStore } from './tool/voice-store';
@@ -104,7 +103,6 @@ import { DictService } from './service/dict.service';
     AuthService,
     ConfigService,
     SentenceService,
-    WordService,
     AppService,
     AddService,
     VoiceMurfRequest,

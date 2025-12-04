@@ -1,6 +1,5 @@
 export class MyWordDto {
   word!: string;
-  voice!: string;
   phonetic?: string;
   translation?: string;
   type!: 'source' | 'target';
