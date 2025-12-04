@@ -9,7 +9,6 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
-import { randomInt } from 'crypto';
 import type { Response } from 'express';
 import { Auth } from 'src/decorator/auth.decorator';
 import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
@@ -17,7 +16,7 @@ import { AuthDto } from 'src/dto/auth.dto';
 import { WordsDto } from 'src/dto/words.dto';
 import { AuthService } from 'src/service/auth.service';
 import { WordsService } from 'src/service/words.service';
-import { md5 } from 'src/tool/tool';
+import { md5, randomAB } from 'src/tool/tool';
 import { VoiceStore } from 'src/tool/voice-store';
 import { VoiceSpeaker } from 'src/tool/voice/voice-speaker';
 
@@ -40,7 +39,7 @@ export class WordsController {
         id: item.id,
         words: item.source,
         translation: item.target,
-        type: randomInt(1, 101) <= user.sayRatio ? 'say' : 'listen',
+        type: randomAB('listen', 'say', user.sayRatio),
       };
     });
   }
@@ -48,10 +47,15 @@ export class WordsController {
   @Post(':id/remember')
   async rememberWords(
     @Param('id') wordsId: number,
-    @Body() body: { hintCount: number },
+    @Body() body: { hintCount: number; thinkingTime: number },
     @Auth() auth: AuthDto,
   ) {
-    await this.wordsService.rememberWords(wordsId, body.hintCount, auth.userId);
+    await this.wordsService.rememberWords(
+      wordsId,
+      body.hintCount,
+      body.thinkingTime,
+      auth.userId,
+    );
   }
 
   @Post(':id/bad')
@@ -69,10 +73,15 @@ export class WordsController {
     try {
       const user = await this.authService.getUserProfile(auth.userId);
       const speaker = user.multiSpeaker
-        ? this.voiceSpeaker.getRandomName()
-        : this.voiceSpeaker.getDefaultName();
+        ? this.voiceSpeaker.getRandomName('words')
+        : this.voiceSpeaker.getDefaultName('words');
 
-      const fileName = this.voiceStore.getFileName(wordsId, speaker, slow);
+      const fileName = this.voiceStore.getFileName(
+        wordsId,
+        speaker,
+        'words',
+        slow,
+      );
       const stream = await this.voiceStore.getStream(fileName);
       if (stream == null) {
         throw new NotFoundException();

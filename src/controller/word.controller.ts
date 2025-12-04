@@ -1,4 +1,3 @@
-import { HttpService } from '@nestjs/axios';
 import {
   Controller,
   Get,
@@ -8,23 +7,29 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
+import dayjs from 'dayjs';
 import type { Response } from 'express';
-import { firstValueFrom } from 'rxjs';
+import { Auth } from 'src/decorator/auth.decorator';
 import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
+import { AuthDto } from 'src/dto/auth.dto';
+import { AuthService } from 'src/service/auth.service';
 import { WordService } from 'src/service/word.service';
-import Stream from 'stream';
+import { VoiceStore } from 'src/tool/voice-store';
+import { VoiceSpeaker } from 'src/tool/voice/voice-speaker';
 
 @ClientAllowed('android')
 @Controller()
 export class WordController {
   constructor(
-    private readonly httpService: HttpService,
     private readonly wordService: WordService,
+    private readonly authService: AuthService,
+    private readonly voiceStore: VoiceStore,
+    private readonly voiceSpeaker: VoiceSpeaker,
   ) {}
 
   @Get('word/:word/dict')
   async getDict(@Param('word') word: string) {
-    return this.wordService.getDict(word);
+    return this.wordService.getDictOrFail(word);
   }
 
   @Post('word/:word/dict/bad')
@@ -34,35 +39,33 @@ export class WordController {
 
   /**
    * 获取单词的发音
-   * 来自于第三方url，暂不支持慢速语音
    */
   @Get('word/:word/voice_stream')
   async getVoiceUrlThird(
     @Param('word') word: string,
-    // TODO: 暂不支持
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @Query('slow') slow: boolean = false,
+    @Auth() auth: AuthDto,
     @Res() res: Response,
   ) {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(`http://dict.youdao.com/dictvoice?audio=${word}`, {
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
-          },
-          responseType: 'stream',
-        }),
-      );
+      const user = await this.authService.getUserProfile(auth.userId);
+      const speaker = user.multiSpeaker
+        ? this.voiceSpeaker.getRandomName('word')
+        : this.voiceSpeaker.getDefaultName('word');
+
+      const fileName = this.voiceStore.getFileName(word, speaker, 'word', slow);
+      const stream = await this.voiceStore.getStream(fileName);
+      if (stream == null) {
+        throw new NotFoundException();
+      }
 
       // 设置响应头
       res.set({
-        'Content-Type': 'audio/mpeg',
-        'Content-Disposition': `inline; filename="word-voice-${word}.mp3"`,
-        'Content-Length': response.headers['content-length'] as string,
+        'Content-Type': 'audio/ogg',
+        'Content-Disposition': `inline; filename="word-voice-${dayjs().unix()}.opus"`,
       });
-      // 管道转发
-      (response.data as Stream.Readable).pipe(res);
+
+      stream.pipe(res);
     } catch (err) {
       throw new NotFoundException(err);
     }

@@ -28,7 +28,7 @@ export class User {
   @Column()
   nickname!: string;
 
-  @Column()
+  @Column({ nullable: true })
   avatar?: string;
 
   @Column({ name: 'remember_method', type: 'enum', enum: RememberMethod })
@@ -51,14 +51,22 @@ export class User {
 
   /**
    * 个人遗忘曲线
+   * 默认值 1
    */
-  @Column({ name: 'curr_stability' })
+  @Column({ name: 'curr_stability', nullable: true })
   currStability?: number;
 
-  @Column({ name: 'wechat_openid' })
+  /**
+   * 反转单词本比率
+   * 比如之前是看英文想释义，现在是看释义想英文
+   */
+  @Column({ name: 'reverse_word_book_ratio' })
+  reverseWordBookRatio!: number;
+
+  @Column({ name: 'wechat_openid', nullable: true })
   wechatOpenid?: string;
 
-  @Column({ name: 'wechat_unionid' })
+  @Column({ name: 'wechat_unionid', nullable: true })
   wechatUnionid?: string;
 
   @CreateDateColumn({ name: 'created_at' })

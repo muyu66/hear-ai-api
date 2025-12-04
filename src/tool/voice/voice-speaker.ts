@@ -8,20 +8,21 @@ export class VoiceSpeaker {
   public readonly ALI_EMILY = { name: 'ali-emily', id: 'emily' };
   public readonly ALI_EVA = { name: 'ali-eva', id: 'eva' };
 
-  // 所有可用名字
-  private readonly enabledVoices = [
-    this.ALI_CALLY,
-    this.ALI_ERIC,
-    this.ALI_EMILY,
-    this.ALI_EVA,
-  ];
-
-  getRandomName(): string {
-    const voice = _.sample(this.enabledVoices);
-    return voice ? voice.name : this.getDefaultName(); // 默认值，数组空时不报错
+  // 所有可用音源
+  private getEnabledVoices(
+    catalog: 'words' | 'word',
+  ): { name: string; id: string }[] {
+    return catalog === 'words'
+      ? [this.ALI_CALLY, this.ALI_ERIC, this.ALI_EMILY, this.ALI_EVA]
+      : [this.ALI_EVA];
   }
 
-  getDefaultName(): string {
-    return this.ALI_CALLY.name;
+  getRandomName(catalog: 'words' | 'word'): string {
+    const voice = _.sample(this.getEnabledVoices(catalog));
+    return voice!.name;
+  }
+
+  getDefaultName(catalog: 'words' | 'word'): string {
+    return catalog === 'words' ? this.ALI_CALLY.name : this.ALI_EVA.name;
   }
 }

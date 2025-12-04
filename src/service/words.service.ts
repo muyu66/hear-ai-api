@@ -97,7 +97,12 @@ export class WordsService {
     return newPool.slice(0, sliceCount);
   }
 
-  async rememberWords(wordsId: number, hintCount: number, userId: number) {
+  async rememberWords(
+    wordsId: number,
+    hintCount: number,
+    thinkingTime: number,
+    userId: number,
+  ) {
     const history = await this.wordsHistoryRepository.findOneBy({
       userId,
       wordsId,
@@ -107,23 +112,27 @@ export class WordsService {
         userId,
         wordsId,
         currHintCount: hintCount,
+        hintCount,
         rememberedCount: 1,
         rememberedAt: new Date(),
-        hintCount,
         repetitionZeroHintCount: 0,
         easeFactor: 2.5,
         lastRememberedAt: new Date(),
+        currThinkingTime: thinkingTime,
+        thinkingTime,
       });
     } else {
       await this.wordsHistoryRepository.update(
         { userId, wordsId },
         {
+          hintCount: history.hintCount + hintCount,
           currHintCount: hintCount,
+          thinkingTime: history.thinkingTime + thinkingTime,
+          currThinkingTime: thinkingTime,
           rememberedCount: history.rememberedCount + 1,
           // 注意顺序
           lastRememberedAt: history.rememberedAt,
           rememberedAt: new Date(),
-          hintCount: history.hintCount + hintCount,
         },
       );
     }

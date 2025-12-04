@@ -7,9 +7,11 @@ import { WordBookSummaryDto } from 'src/dto/word-book.dto';
 import { Lang } from 'src/enum/lang.enum';
 import { WelcomeWords } from 'src/model/welcome-words.model';
 import { WordBook } from 'src/model/word-book.model';
-import { And, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, LessThanOrEqual, Repository } from 'typeorm';
 import { AlgorithmService } from './algorithm.service';
 import { AuthService } from './auth.service';
+import { User } from 'src/model/user.model';
+import { RememberMethod } from 'src/enum/remember-method.enum';
 
 @Injectable()
 export class AppService {
@@ -23,6 +25,8 @@ export class AppService {
     private readonly wordBookRepository: Repository<WordBook>,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly algorithmService: AlgorithmService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   async getCachedWelcomeWords(lang: Lang): Promise<string[]> {
@@ -49,27 +53,39 @@ export class AppService {
   }
 
   async getWordBookSummary(userId: number): Promise<WordBookSummaryDto> {
+    const user = await this.userRepository.findOneByOrFail({ id: userId });
+
     const totalCount = await this.wordBookRepository.countBy({
       userId,
-      rememberedAt: And(MoreThanOrEqual(dayjs().toDate())),
     });
 
-    const todayCount = await this.wordBookRepository.countBy({
+    const nowCount = await this.getWordBookNow(userId);
+
+    const todayDoneCount = await this.wordBookRepository.countBy({
       userId,
-      rememberedAt: And(
-        MoreThanOrEqual(dayjs().toDate()),
-        LessThanOrEqual(dayjs().endOf('days').toDate()),
+      lastRememberedAt: Between(
+        dayjs().startOf('days').toDate(),
+        dayjs().endOf('days').toDate(),
       ),
     });
 
     const tomorrowCount = await this.wordBookRepository.countBy({
       userId,
-      rememberedAt: And(
-        MoreThanOrEqual(dayjs().add(1, 'days').startOf('days').toDate()),
-        LessThanOrEqual(dayjs().add(1, 'days').endOf('days').toDate()),
+      rememberedAt: Between(
+        dayjs().add(1, 'days').startOf('days').toDate(),
+        dayjs().add(1, 'days').endOf('days').toDate(),
       ),
     });
-    return { totalCount, todayCount, tomorrowCount };
+    return {
+      totalCount,
+      tomorrowCount,
+      nowCount,
+      todayDoneCount,
+      currStability:
+        user.rememberMethod === RememberMethod.ARSS
+          ? (user.currStability ?? 1)
+          : undefined,
+    };
   }
 
   /**
@@ -77,30 +93,40 @@ export class AppService {
    * @param userId
    * @returns
    */
-  async getWordBookToday(userId: number): Promise<number> {
+  async getWordBookNow(userId: number): Promise<number> {
     return await this.wordBookRepository.countBy({
       userId,
-      rememberedAt: And(
-        MoreThanOrEqual(dayjs().toDate()),
-        LessThanOrEqual(dayjs().endOf('days').toDate()),
-      ),
+      rememberedAt: LessThanOrEqual(dayjs().toDate()),
     });
   }
 
-  async getWordBooks(userId: number, limit: number): Promise<WordBook[]> {
+  /**
+   * 获取此时的复习内容
+   * @param userId
+   * @param limit
+   * @returns
+   */
+  async getWordBooks(
+    userId: number,
+    limit: number,
+    offset: number,
+  ): Promise<WordBook[]> {
     return await this.wordBookRepository.find({
       where: {
         userId,
-        rememberedAt: And(
-          MoreThanOrEqual(dayjs().toDate()),
-          LessThanOrEqual(dayjs().endOf('days').toDate()),
-        ),
+        rememberedAt: LessThanOrEqual(dayjs().toDate()),
       },
       take: limit,
+      skip: offset,
     });
   }
 
-  async rememberWordBook(userId: number, word: string, hintCount: number) {
+  async rememberWordBook(
+    userId: number,
+    word: string,
+    hintCount: number,
+    thinkingTime: number,
+  ) {
     const now = new Date();
 
     const user = await this.authService.getUserProfile(userId);
@@ -113,12 +139,15 @@ export class AppService {
       rememberedAt: LessThanOrEqual(now),
     });
     if (!model) {
-      throw new NotFoundException('无需复习');
+      this.logger.error(`用户无需复习 word=${word} userId=${userId}`);
+      return;
     }
 
     // 在计算之前赋值
     model.currHintCount = hintCount;
     model.hintCount += hintCount;
+    model.currThinkingTime = thinkingTime;
+    model.thinkingTime += thinkingTime;
     model.rememberedAt = now;
     model.rememberedCount += 1;
 
@@ -178,6 +207,8 @@ export class AppService {
       lastRememberedAt: new Date(),
       repetitionZeroHintCount: 0,
       easeFactor: 2.5,
+      thinkingTime: 0,
+      currThinkingTime: 0,
     });
     return true;
   }

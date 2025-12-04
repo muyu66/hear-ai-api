@@ -10,13 +10,16 @@ import {
 } from 'src/dto/word-book.dto';
 import { Lang } from 'src/enum/lang.enum';
 import { AppService } from 'src/service/app.service';
+import { AuthService } from 'src/service/auth.service';
 import { WordService } from 'src/service/word.service';
+import { randomAB } from 'src/tool/tool';
 
 @ClientAllowed('android')
 @Controller('word_books')
 export class WordBookController {
   constructor(
     private readonly appService: AppService,
+    private readonly authService: AuthService,
     private readonly wordServicei: WordService,
   ) {}
 
@@ -27,16 +30,24 @@ export class WordBookController {
     return this.appService.getWordBookSummary(auth.userId);
   }
 
-  @Get('today')
-  async getWordBooksToday(@Auth() auth: AuthDto): Promise<{ result: number }> {
-    const result = await this.appService.getWordBookToday(auth.userId);
+  @Get('now')
+  async getWordBooksNow(@Auth() auth: AuthDto): Promise<{ result: number }> {
+    const result = await this.appService.getWordBookNow(auth.userId);
     return { result };
   }
 
   @Get()
-  async getWordBooks(@Auth() auth: AuthDto): Promise<WordBookDto[]> {
-    // TODO: 分页刷新
-    const wordBooks = await this.appService.getWordBooks(auth.userId, 200);
+  async getWordBooks(
+    @Query('offset') offset: number = 0,
+    @Auth() auth: AuthDto,
+  ): Promise<WordBookDto[]> {
+    const user = await this.authService.getUserProfile(auth.userId);
+
+    const wordBooks = await this.appService.getWordBooks(
+      auth.userId,
+      20,
+      offset,
+    );
     const words = wordBooks.map((v) => v.word);
     const dicts = await this.wordServicei.getDictsByWords(words);
 
@@ -47,6 +58,8 @@ export class WordBookController {
         word: item.word,
         voice: `https://dict.youdao.com/dictvoice?audio=${item.word}`,
         phonetic: dict?.phonetic,
+        translation: dict?.translation,
+        type: randomAB('source', 'target', user.reverseWordBookRatio),
       };
     });
   }
@@ -79,6 +92,7 @@ export class WordBookController {
       auth.userId,
       body.word,
       body.hintCount,
+      body.thinkingTime,
     );
   }
 

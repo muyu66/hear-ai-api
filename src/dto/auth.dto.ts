@@ -1,4 +1,4 @@
-import { IsOptional, Length, Max, Min } from 'class-validator';
+import { IsOptional, Length, Matches, Max, Min } from 'class-validator';
 import { ClientType } from 'src/constant/contant';
 import { RememberMethod } from 'src/enum/remember-method.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
@@ -17,11 +17,13 @@ export class AuthProfileDto {
   multiSpeaker!: boolean;
   isWechat!: boolean;
   sayRatio!: number;
+  reverseWordBookRatio?: number;
   targetRetention!: number;
 }
 
 export class AuthProfileUpdateDto {
   @Length(1, 20)
+  @Matches(/^[\u4e00-\u9fa5_a-zA-Z0-9]+$/)
   @IsOptional()
   nickname?: string;
   @IsOptional()
@@ -36,6 +38,10 @@ export class AuthProfileUpdateDto {
   @Max(100)
   @Min(0)
   sayRatio?: number;
+  @IsOptional()
+  @Max(100)
+  @Min(0)
+  reverseWordBookRatio?: number;
   @IsOptional()
   @Max(95)
   @Min(80)

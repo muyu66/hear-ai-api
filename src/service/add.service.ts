@@ -10,6 +10,7 @@ import { VoiceStore } from 'src/tool/voice-store';
 import { formatBufferWavToOpus } from 'src/tool/voice/format';
 import { VoiceAliRequest } from 'src/tool/voice/voice-ali-request';
 import { Repository } from 'typeorm';
+import { WordTokenizer } from 'natural';
 
 @Injectable()
 export class AddService {
@@ -70,7 +71,12 @@ export class AddService {
 
       for (const isSlow of [false, true]) {
         const exist = await this.voiceStore.exist(
-          this.voiceStore.getFileName(wordModel.id, speakerObj.name, isSlow),
+          this.voiceStore.getFileName(
+            wordModel.id,
+            speakerObj.name,
+            'words',
+            isSlow,
+          ),
         );
         if (exist) {
           this.logger.debug(
@@ -94,20 +100,117 @@ export class AddService {
         const opusVoice = await formatBufferWavToOpus(wavVoice);
 
         await this.voiceStore.upload(
-          this.voiceStore.getFileName(wordModel.id, speakerObj.name, isSlow),
+          this.voiceStore.getFileName(
+            wordModel.id,
+            speakerObj.name,
+            'words',
+            isSlow,
+          ),
           opusVoice,
         );
       }
 
       // 上传当前索引
       await this.voiceStore.upload(
-        this.voiceStore.getFileIndexName(speakerObj.name),
+        this.voiceStore.getFileIndexName(speakerObj.name, 'words'),
         Buffer.from(offset + ''),
       );
 
       await sleep(2000);
       offset++;
       await this.addVoices(speakerObj, offset);
+    } catch (e) {
+      this.logger.error(e);
+    }
+  }
+
+  async addWordVoices(speakerObj: { name: string; id: string }) {
+    const indexBuff = await this.voiceStore.getBuffer(
+      this.voiceStore.getFileIndexName(speakerObj.name, 'word'),
+    );
+    const index = indexBuff?.toString('utf8')
+      ? Number(indexBuff?.toString('utf8'))
+      : 0;
+    return this.addWordVoicesCore(speakerObj, index, []);
+  }
+
+  private async addWordVoicesCore(
+    speakerObj: { name: string; id: string },
+    offset: number = 0,
+    done: string[],
+  ) {
+    try {
+      // 因为API限制，目前一个一个处理
+      this.logger.debug(
+        `正在获取单词音频 Speaker=${speakerObj.name} Offset=${offset} 音频...`,
+      );
+      const wordModel = await this.wordsRepository
+        .createQueryBuilder('w')
+        .limit(1)
+        .offset(offset)
+        .orderBy('w.id', 'ASC')
+        .getOneOrFail();
+
+      const tokenizer = new WordTokenizer();
+      const words = tokenizer
+        .tokenize(wordModel.source)
+        .map((v) => v.toLowerCase());
+
+      for (const word of words) {
+        if (done.includes(word)) {
+          this.logger.debug(
+            `[缓存数量=${done.length}] 单词已缓存无需处理，跳过 Word=${word} Speaker=${speakerObj.name} WordsId=${wordModel.id} Offset=${offset} 音频...`,
+          );
+          continue;
+        }
+        await sleep(200);
+
+        this.logger.debug(
+          `正在获取单词音频 Word=${word} Speaker=${speakerObj.name} Offset=${offset} 音频...`,
+        );
+
+        for (const isSlow of [false, true]) {
+          const exist = await this.voiceStore.exist(
+            this.voiceStore.getFileName(word, speakerObj.name, 'word', isSlow),
+          );
+          if (exist) {
+            this.logger.debug(
+              `单词音频音频已存在，跳过 Word=${word} Speaker=${speakerObj.name} WordsId=${wordModel.id} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+            );
+            continue;
+          }
+
+          this.logger.debug(
+            `正在获取单词音频 Word=${word} Speaker=${speakerObj.name} WordsId=${wordModel.id} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+          );
+          const wavVoice = await this.voiceAliRequest.request(
+            word,
+            speakerObj.id,
+            isSlow,
+          );
+
+          this.logger.debug(
+            `正在单词音频Opus转码 Word=${word} Speaker=${speakerObj.name} WordsId=${wordModel.id} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+          );
+          const opusVoice = await formatBufferWavToOpus(wavVoice);
+
+          await this.voiceStore.upload(
+            this.voiceStore.getFileName(word, speakerObj.name, 'word', isSlow),
+            opusVoice,
+          );
+        }
+      }
+      done.push(...words);
+
+      // 上传当前索引
+      await this.voiceStore.upload(
+        this.voiceStore.getFileIndexName(speakerObj.name, 'word'),
+        Buffer.from(offset + ''),
+      );
+
+      await sleep(2000);
+      offset++;
+      await this.addWordVoicesCore(speakerObj, offset, done);
     } catch (e) {
       this.logger.error(e);
     }

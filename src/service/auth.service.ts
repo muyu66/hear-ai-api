@@ -84,6 +84,7 @@ export class AuthService {
         multiSpeaker: body.multiSpeaker,
         wordsLevel: body.wordsLevel,
         sayRatio: body.sayRatio,
+        reverseWordBookRatio: body.reverseWordBookRatio,
         targetRetention: body.targetRetention,
       },
     );
@@ -121,6 +122,7 @@ export class AuthService {
         useMinute: 5,
         multiSpeaker: true,
         sayRatio: 20,
+        reverseWordBookRatio: 20,
         targetRetention: 90,
         currStability: 1.0,
         wechatOpenid: data.wechatOpenid,

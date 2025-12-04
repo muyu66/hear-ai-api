@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import _ from 'lodash';
 import { RememberMethod } from 'src/enum/remember-method.enum';
 import { RememberModel } from 'src/interface/remember-model';
 import { User } from 'src/model/user.model';
@@ -28,7 +29,11 @@ export class AlgorithmService {
       this.logger.error(`没有适配的算法 rememberMethod=${user.rememberMethod}`);
       return null;
     }
-    return algorithm.handle(model, user.targetRetention, user.currStability);
+    return algorithm.handle(
+      model,
+      _.divide(user.targetRetention, 100),
+      user.currStability,
+    );
   }
 
   /**

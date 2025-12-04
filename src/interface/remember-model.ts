@@ -36,6 +36,19 @@ export interface RememberModel {
   easeFactor: number;
 
   /**
+   * 当前思考时间
+   * 单位毫秒
+   * 0=不喜欢或者太熟悉
+   */
+  currThinkingTime: number;
+
+  /**
+   * 总计思考时间
+   * 单位毫秒
+   */
+  thinkingTime: number;
+
+  /**
    * 第一次记忆时间
    */
   createdAt: Date;

@@ -31,4 +31,13 @@ export class TaskController {
     const speakerObj = this.voiceSpeaker.ALI_EVA;
     return this.addService.addVoices(speakerObj, 0);
   }
+
+  @Get('word_voices')
+  async addWordVoice() {
+    if (this.configService.env !== 'development') {
+      return;
+    }
+    const speakerObj = this.voiceSpeaker.ALI_EVA;
+    return this.addService.addWordVoices(speakerObj);
+  }
 }

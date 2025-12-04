@@ -49,6 +49,12 @@ export class WordBook implements RememberModel {
   @Column({ name: 'ease_factor' })
   easeFactor!: number;
 
+  @Column({ name: 'thinking_time' })
+  thinkingTime!: number;
+
+  @Column({ name: 'curr_thinking_time' })
+  currThinkingTime!: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

@@ -1,11 +1,12 @@
 import OSS from 'ali-oss';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from 'src/service/config.service';
 import { ReadStream } from 'fs';
 
 @Injectable()
 export class VoiceStore {
   private readonly client: OSS;
+  private readonly logger = new Logger(VoiceStore.name);
 
   constructor(private readonly configService: ConfigService) {
     if (this.configService.aliAk && this.configService.aliSk) {
@@ -52,19 +53,29 @@ export class VoiceStore {
   }
 
   async getBuffer(fileName: string) {
-    const result = await this.client.get(fileName);
-    const buffer = result.content as Buffer;
-    if (buffer == null) {
+    try {
+      const result = await this.client.get(fileName);
+      const buffer = result.content as Buffer;
+      if (buffer == null) {
+        return null;
+      }
+      return buffer;
+    } catch (e) {
+      this.logger.error(e);
       return null;
     }
-    return buffer;
   }
 
-  getFileName(wordsId: number, speaker: string, isSlow: boolean) {
-    return `/speaker/${speaker}/words/${wordsId}/${isSlow ? 'voice_slow' : 'voice'}`;
+  getFileName(
+    id: number | string,
+    speaker: string,
+    catalog: 'words' | 'word',
+    isSlow: boolean,
+  ) {
+    return `/speaker/${speaker}/${catalog}/${id}/${isSlow ? 'voice_slow' : 'voice'}`;
   }
 
-  getFileIndexName(speaker: string) {
-    return `/speaker/${speaker}/words/index`;
+  getFileIndexName(speaker: string, catalog: 'words' | 'word') {
+    return `/speaker/${speaker}/${catalog}/index`;
   }
 }

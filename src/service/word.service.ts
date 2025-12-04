@@ -12,8 +12,14 @@ export class WordService {
     private dictRepository: Repository<Dict>,
   ) {}
 
-  async getDict(word: string) {
+  async getDictOrFail(word: string) {
     return this.dictRepository.findOneByOrFail({
+      word,
+    });
+  }
+
+  async getDict(word: string) {
+    return this.dictRepository.findOneBy({
       word,
     });
   }

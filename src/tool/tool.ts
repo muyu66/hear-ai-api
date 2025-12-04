@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto, { randomInt } from 'crypto';
 
 export function md5(str: string) {
   return crypto.createHash('md5').update(str).digest('hex');
@@ -20,4 +20,8 @@ export function randomNonce(len = 48): string {
 
 export function randomId() {
   return crypto.randomBytes(16).toString('hex');
+}
+
+export function randomAB<T>(a: T, b: T, value: number) {
+  return randomInt(1, 101) <= value ? b : a;
 }

@@ -43,6 +43,7 @@ export class AuthController {
       multiSpeaker: user.multiSpeaker,
       isWechat: user.wechatOpenid != null,
       sayRatio: user.sayRatio,
+      reverseWordBookRatio: user.reverseWordBookRatio,
       targetRetention: user.targetRetention,
     };
   }
