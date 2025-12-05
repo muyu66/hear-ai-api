@@ -16,9 +16,8 @@ export class RememberWordDto {
 
 export class MyWordSummaryDto {
   totalCount!: number;
-  currStability?: number;
   tomorrowCount!: number;
   nowCount!: number;
   todayDoneCount!: number;
-  memoryCurve?: number[];
+  stability?: number;
 }

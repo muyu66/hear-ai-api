@@ -1,10 +1,10 @@
 import { Lang } from 'src/enum/lang.enum';
 import { RememberModel } from 'src/interface/remember-model';
 import {
-  Entity,
   Column,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -34,11 +34,11 @@ export class WordBook implements RememberModel {
   @Column({ name: 'remembered_count' })
   rememberedCount!: number;
 
-  @Column({ name: 'remembered_at' })
-  rememberedAt!: Date;
+  @Column({ name: 'next_remembered_at' })
+  nextRememberedAt?: Date;
 
-  @Column({ name: 'last_remembered_at' })
-  lastRememberedAt!: Date;
+  @Column({ name: 'last_remembered_at', nullable: true })
+  lastRememberedAt?: Date;
 
   @Column({ name: 'curr_hint_count' })
   currHintCount!: number;
@@ -46,17 +46,23 @@ export class WordBook implements RememberModel {
   @Column({ name: 'hint_count' })
   hintCount!: number;
 
-  @Column({ name: 'repetition_zero_hint_count' })
-  repetitionZeroHintCount!: number;
-
-  @Column({ name: 'ease_factor' })
-  easeFactor!: number;
-
   @Column({ name: 'thinking_time' })
   thinkingTime!: number;
 
   @Column({ name: 'curr_thinking_time' })
   currThinkingTime!: number;
+
+  /**
+   * 稳定值
+   */
+  @Column({ name: 'stability', nullable: true })
+  stability?: number;
+
+  @Column({ name: 'difficulty', nullable: true })
+  difficulty?: number;
+
+  @Column({ name: 'short_stage_index', nullable: true })
+  shortStageindex?: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
@@ -64,9 +70,39 @@ export class WordBook implements RememberModel {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 
-  constructor(init?: Partial<WordBook>) {
-    if (init) {
-      Object.assign(this, init);
+  constructor(params?: {
+    userId: number;
+    word: string;
+    wordLang: Lang;
+    from: string;
+    badScore: number;
+    rememberedCount: number;
+    nextRememberedAt?: Date;
+    lastRememberedAt?: Date;
+    currHintCount: number;
+    hintCount: number;
+    thinkingTime: number;
+    currThinkingTime: number;
+    stability?: number;
+    difficulty?: number;
+    shortStageindex?: number;
+  }) {
+    if (params) {
+      this.userId = params.userId;
+      this.word = params.word;
+      this.wordLang = params.wordLang;
+      this.from = params.from;
+      this.badScore = params.badScore;
+      this.rememberedCount = params.rememberedCount;
+      this.nextRememberedAt = params.nextRememberedAt;
+      this.lastRememberedAt = params.lastRememberedAt;
+      this.currHintCount = params.currHintCount;
+      this.hintCount = params.hintCount;
+      this.thinkingTime = params.thinkingTime;
+      this.currThinkingTime = params.currThinkingTime;
+      this.stability = params.stability;
+      this.difficulty = params.difficulty;
+      this.shortStageindex = params.shortStageindex;
     }
   }
 }

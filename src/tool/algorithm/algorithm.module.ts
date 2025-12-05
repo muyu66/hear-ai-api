@@ -1,33 +1,25 @@
 import { Module, Provider } from '@nestjs/common';
 import { ALGORITHM, AlgorithmFactory } from './algorithm';
-import { ARSSAlgorithmService } from './arss.algorithm';
-import { ASMPlusAlgorithmService } from './asm-plus.algorithm';
-import { SM2AlgorithmService } from './sm2.algorithm';
+import { SMCAlgorithmService } from './smc.algorithm';
 import { ShortTermAlgorithmService } from './short-term.algorithm';
+import { SMZAlgorithmService } from './smz.algorithm';
 
 // 提供算法数组给工厂
 const AlgorithmFactoryProvider: Provider = {
   provide: ALGORITHM,
   useFactory: (
-    sm2: SM2AlgorithmService,
-    asmplus: ASMPlusAlgorithmService,
-    arss: ARSSAlgorithmService,
+    smc: SMCAlgorithmService,
     st: ShortTermAlgorithmService,
-  ) => [sm2, asmplus, arss, st],
-  inject: [
-    SM2AlgorithmService,
-    ASMPlusAlgorithmService,
-    ARSSAlgorithmService,
-    ShortTermAlgorithmService,
-  ],
+    smz: SMZAlgorithmService,
+  ) => [smc, st, smz],
+  inject: [SMCAlgorithmService, SMZAlgorithmService, ShortTermAlgorithmService],
 };
 
 @Module({
   providers: [
-    SM2AlgorithmService,
-    ARSSAlgorithmService,
-    ASMPlusAlgorithmService,
+    SMCAlgorithmService,
     ShortTermAlgorithmService,
+    SMZAlgorithmService,
 
     AlgorithmFactoryProvider,
     AlgorithmFactory,

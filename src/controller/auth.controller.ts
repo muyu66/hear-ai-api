@@ -112,6 +112,7 @@ export class AuthController {
       account: string;
       signatureBase64: string;
       timestamp: string;
+      deviceInfo?: string;
     },
   ) {
     return this.authService.signIn(
@@ -119,6 +120,7 @@ export class AuthController {
       body.signatureBase64,
       body.timestamp,
       'android',
+      body.deviceInfo,
     );
   }
 

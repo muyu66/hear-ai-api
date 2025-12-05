@@ -18,7 +18,9 @@ import { ClientType } from 'src/constant/contant';
 import { AuthProfileUpdateDto, JwtPayload } from 'src/dto/auth.dto';
 import { RememberMethod } from 'src/enum/remember-method.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
+import { UserLoginHistory } from 'src/model/user-login-history.model';
 import { User } from 'src/model/user.model';
+import { calculateActiveLevel } from 'src/tool/tool';
 import nacl from 'tweetnacl';
 import { Repository } from 'typeorm';
 import { ConfigService } from './config.service';
@@ -32,6 +34,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(UserLoginHistory)
+    private userLoginHistoryRepository: Repository<UserLoginHistory>,
     private readonly jwtService: JwtService,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
@@ -52,6 +56,7 @@ export class AuthService {
       signatureBase64,
       timestamp,
       'chrome',
+      undefined,
       '14d',
     );
     await this.cacheManager.set(
@@ -104,19 +109,19 @@ export class AuthService {
 
   async createUser(data: {
     nickname?: string;
-    account?: string;
-    publicKeyBase64?: string;
+    account: string;
+    publicKeyBase64: string;
     deviceInfo?: string;
     wechatOpenid?: string;
     wechatUnionid?: string;
   }) {
     return this.userRepository.save(
-      this.userRepository.create({
+      new User({
         account: data.account,
         publicKey: data.publicKeyBase64,
         publicKeyExpiredAt: dayjs().add(30, 'day').toDate(),
         nickname: data.nickname ?? generateCuteNickname({ forcePrefix: true }),
-        rememberMethod: RememberMethod.SM2,
+        rememberMethod: RememberMethod.SMZ,
         wordsLevel: WordsLevel.EASY,
         deviceInfo: data.deviceInfo,
         useMinute: 5,
@@ -124,7 +129,6 @@ export class AuthService {
         sayRatio: 20,
         reverseWordBookRatio: 20,
         targetRetention: 90,
-        currStability: 1.0,
         wechatOpenid: data.wechatOpenid,
         wechatUnionid: data.wechatUnionid,
       }),
@@ -237,6 +241,7 @@ export class AuthService {
     signatureBase64: string,
     timestamp: string,
     clientType: ClientType,
+    deviceInfo?: string,
     expiresIn: StringValue = '1d',
   ) {
     const user = await this.userRepository.findOneBy({
@@ -246,13 +251,38 @@ export class AuthService {
       throw new NotFoundException('账号不存在');
     }
 
-    return this.verifyAndIssueAccessToken(
+    const res = this.verifyAndIssueAccessToken(
       user,
       signatureBase64,
       timestamp,
       clientType,
       expiresIn,
     );
+
+    await this.afterSignIn(user.id, account, deviceInfo);
+    return res;
+  }
+
+  private async afterSignIn(
+    userId: number,
+    account: string,
+    deviceInfo?: string,
+  ) {
+    // 插入登录记录
+    await this.userLoginHistoryRepository.insert(
+      new UserLoginHistory(userId, account, deviceInfo),
+    );
+    // 计算登录间隔
+    const loginHistories = await this.userLoginHistoryRepository.find({
+      select: ['createdAt'],
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: 20,
+    });
+    const activeLevel = calculateActiveLevel(
+      loginHistories.map((h) => h.createdAt),
+    );
+    await this.userRepository.update(userId, { activeLevel });
   }
 
   private verifyAndIssueAccessToken(

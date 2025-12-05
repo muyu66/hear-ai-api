@@ -29,8 +29,8 @@ export class DictService {
     repo: Repository<Dict | AiDict>;
   }[] {
     return [
-      { dict: 'ecdict', dictName: '内置词典', repo: this.dictRepository },
       { dict: 'ai', dictName: 'AI词典', repo: this.aiDictRepository },
+      { dict: 'ecdict', dictName: '内置词典', repo: this.dictRepository },
     ];
   }
 

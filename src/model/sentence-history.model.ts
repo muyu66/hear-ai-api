@@ -24,20 +24,14 @@ export class SentenceHistory implements RememberModel {
   @Column({ name: 'remembered_count' })
   rememberedCount!: number;
 
-  @Column({ name: 'remembered_at' })
-  rememberedAt!: Date;
+  @Column({ name: 'next_remembered_at' })
+  nextRememberedAt!: Date;
 
-  @Column({ name: 'last_remembered_at' })
-  lastRememberedAt!: Date;
+  @Column({ name: 'last_remembered_at', nullable: true })
+  lastRememberedAt?: Date;
 
   @Column({ name: 'hint_count' })
   hintCount!: number;
-
-  @Column({ name: 'repetition_zero_hint_count' })
-  repetitionZeroHintCount!: number;
-
-  @Column({ name: 'ease_factor' })
-  easeFactor!: number;
 
   @Column({ name: 'thinking_time' })
   thinkingTime!: number;
@@ -45,9 +39,51 @@ export class SentenceHistory implements RememberModel {
   @Column({ name: 'curr_thinking_time' })
   currThinkingTime!: number;
 
+  /**
+   * 稳定值
+   */
+  @Column({ name: 'stability', nullable: true })
+  stability?: number;
+
+  @Column({ name: 'difficulty', nullable: true })
+  difficulty?: number;
+
+  @Column({ name: 'short_stage_index', nullable: true })
+  shortStageindex?: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
+
+  constructor(params?: {
+    userId: number;
+    wordsId: number;
+    currHintCount: number;
+    rememberedCount: number;
+    nextRememberedAt: Date;
+    lastRememberedAt?: Date;
+    hintCount: number;
+    thinkingTime: number;
+    currThinkingTime: number;
+    stability?: number;
+    difficulty?: number;
+    shortStageindex?: number;
+  }) {
+    if (params) {
+      this.userId = params.userId;
+      this.wordsId = params.wordsId;
+      this.currHintCount = params.currHintCount;
+      this.rememberedCount = params.rememberedCount;
+      this.nextRememberedAt = params.nextRememberedAt;
+      this.lastRememberedAt = params.lastRememberedAt;
+      this.hintCount = params.hintCount;
+      this.thinkingTime = params.thinkingTime;
+      this.currThinkingTime = params.currThinkingTime;
+      this.stability = params.stability;
+      this.difficulty = params.difficulty;
+      this.shortStageindex = params.shortStageindex;
+    }
+  }
 }

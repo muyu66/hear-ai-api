@@ -1,18 +1,20 @@
 export interface RememberModel {
   /**
    * 总计复习次数
+   * 第一次创建时不算复习
    */
   rememberedCount: number;
 
   /**
-   * 当前/计划复习时间
+   * 下一次复习时间
+   * undefined 表示第一次添加，还没有复习
    */
-  rememberedAt: Date;
+  nextRememberedAt?: Date;
 
   /**
    * 上次复习时间
    */
-  lastRememberedAt: Date;
+  lastRememberedAt?: Date;
 
   /**
    * 最近一次提示次数
@@ -24,16 +26,6 @@ export interface RememberModel {
    * 总计提示次数
    */
   hintCount: number;
-
-  /**
-   * 连续的零提示次数
-   */
-  repetitionZeroHintCount: number;
-
-  /**
-   * 难度因子
-   */
-  easeFactor: number;
 
   /**
    * 当前思考时间
@@ -49,7 +41,25 @@ export interface RememberModel {
   thinkingTime: number;
 
   /**
-   * 第一次记忆时间
+   * 难度，不同于EF  (SMZ算法专属)
+   * 0~100（百分比）
+   * 初始值 50
+   */
+  difficulty?: number;
+
+  /**
+   * 稳定值 (SMZ算法专属)
+   */
+  stability?: number;
+
+  /**
+   * 阶段索引 (ST算法专属)
+   */
+  shortStageIndex?: number;
+
+  /**
+   * 第一次接触这个单词的时间
+   * 当时没有复习
    */
   createdAt: Date;
 }

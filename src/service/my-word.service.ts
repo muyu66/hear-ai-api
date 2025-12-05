@@ -42,23 +42,31 @@ export class MyWordService {
 
     const tomorrowCount = await this.wordBookRepository.countBy({
       userId,
-      rememberedAt: Between(
+      nextRememberedAt: Between(
         dayjs().add(1, 'days').startOf('days').toDate(),
         dayjs().add(1, 'days').endOf('days').toDate(),
       ),
     });
+
+    // 需要当前记忆的第一次单词
+    const nowFirst = await this.wordBookRepository.findOne({
+      where: {
+        userId,
+        nextRememberedAt: LessThanOrEqual(dayjs().toDate()),
+      },
+      order: {
+        nextRememberedAt: 'ASC',
+      },
+    });
+
     return {
       totalCount,
       tomorrowCount,
       nowCount,
       todayDoneCount,
-      currStability:
-        user.rememberMethod === RememberMethod.ARSS
-          ? (user.currStability ?? 1)
-          : undefined,
-      memoryCurve:
-        user.rememberMethod === RememberMethod.ARSS
-          ? (user.memoryCurve ?? [])
+      stability:
+        user.rememberMethod !== RememberMethod.ST
+          ? nowFirst?.stability || 0
           : undefined,
     };
   }
@@ -71,7 +79,7 @@ export class MyWordService {
   async getWordBookNow(userId: number): Promise<number> {
     return await this.wordBookRepository.countBy({
       userId,
-      rememberedAt: LessThanOrEqual(dayjs().toDate()),
+      nextRememberedAt: LessThanOrEqual(dayjs().toDate()),
     });
   }
 
@@ -89,7 +97,10 @@ export class MyWordService {
     return await this.wordBookRepository.find({
       where: {
         userId,
-        rememberedAt: LessThanOrEqual(dayjs().toDate()),
+        nextRememberedAt: LessThanOrEqual(dayjs().toDate()),
+      },
+      order: {
+        nextRememberedAt: 'ASC',
       },
       take: limit,
       skip: offset,
@@ -111,7 +122,7 @@ export class MyWordService {
     const model = await this.wordBookRepository.findOneBy({
       userId,
       word,
-      rememberedAt: LessThanOrEqual(now),
+      nextRememberedAt: LessThanOrEqual(now),
     });
     if (!model) {
       this.logger.error(`用户无需复习 word=${word} userId=${userId}`);
@@ -126,7 +137,12 @@ export class MyWordService {
     if (safeModel == null) {
       return;
     }
-    await this.wordBookRepository.save(safeModel);
+    const newModel = this.wordBookRepository.merge(model, safeModel);
+    console.log('model', model);
+    console.log('safeModel', safeModel);
+    console.log('newModel', newModel);
+
+    await this.wordBookRepository.save(newModel);
   }
 
   async badWordBook(userId: number, word: string) {
@@ -172,24 +188,23 @@ export class MyWordService {
       rememberedCount: 0,
       hintCount: 0,
       currHintCount: 0,
-      rememberedAt: new Date(),
-      lastRememberedAt: new Date(),
-      repetitionZeroHintCount: 0,
-      easeFactor: 2.5,
+      nextRememberedAt: undefined,
+      lastRememberedAt: undefined,
       thinkingTime: 0,
       currThinkingTime: 0,
       badScore: 0,
     });
 
-    const safeModel = this.algorithmService.handle(
-      { word, hintCount: 0, thinkingTime: 0 },
-      model,
-      user,
-    );
-    if (safeModel == null) {
+    const safeRememberModel = this.algorithmService.first(model, user);
+    if (safeRememberModel == null) {
       return false;
     }
-    await this.wordBookRepository.insert(safeModel);
+
+    const newModel = this.wordBookRepository.merge(model, safeRememberModel);
+    console.log('newModel', newModel);
+    console.log('safeRememberModel', safeRememberModel);
+    console.log('model', model);
+    await this.wordBookRepository.insert(newModel);
     return true;
   }
 }

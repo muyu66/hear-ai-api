@@ -39,6 +39,7 @@ import { VoiceAliRequest } from './tool/voice/voice-ali-request';
 import { VoiceMurfRequest } from './tool/voice/voice-murf-request';
 import { VoiceSpeaker } from './tool/voice/voice-speaker';
 import { DictService } from './service/dict.service';
+import { UserLoginHistory } from './model/user-login-history.model';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { DictService } from './service/dict.service';
       WelcomeWords,
       SentenceHistory,
       AiDict,
+      UserLoginHistory,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

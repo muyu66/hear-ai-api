@@ -1,20 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { RememberModel } from 'src/interface/remember-model';
+import { User } from 'src/model/user.model';
 
 export interface IAlgorithm {
   type: string; // 每个算法类都提供自己的标识
-  supportTrain: boolean; // 是否支持训练
 
-  handle(
-    model: RememberModel,
-    targetRetention?: number,
-    currentStability?: number,
-  ): RememberModel | null;
-
-  train(
-    history: RememberModel[],
-    initialStability: number, // 新词默认 S=1 天
-  ): { currentS: number; memoryCurve: number[] };
+  handle(sourceModel: RememberModel, user: User): Partial<RememberModel>;
 }
 
 export const ALGORITHM = 'ALGORITHM';
@@ -29,9 +20,14 @@ export class AlgorithmFactory {
     });
   }
 
+  /**
+   * 获取指定算法器
+   * @param type
+   * @returns 找不到则返回默认算法
+   */
   getAlgorithm(type: string): IAlgorithm {
     const algo = this.algorithmMap.get(type);
-    if (!algo) throw new Error(`Unknown algorithm type: ${type}`);
+    if (!algo) return this.algorithmMap.get('st')!;
     return algo;
   }
 

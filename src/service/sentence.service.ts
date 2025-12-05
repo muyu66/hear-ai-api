@@ -105,19 +105,20 @@ export class SentenceService {
       wordsId,
     });
     if (!history) {
-      await this.wordsHistoryRepository.insert({
-        userId,
-        wordsId,
-        currHintCount: hintCount,
-        hintCount,
-        rememberedCount: 1,
-        rememberedAt: new Date(),
-        repetitionZeroHintCount: 0,
-        easeFactor: 2.5,
-        lastRememberedAt: new Date(),
-        currThinkingTime: thinkingTime,
-        thinkingTime,
-      });
+      await this.wordsHistoryRepository.insert(
+        new SentenceHistory({
+          userId,
+          wordsId,
+          currHintCount: hintCount,
+          hintCount,
+          rememberedCount: 1,
+          // 暂无计算的计划
+          nextRememberedAt: new Date(),
+          lastRememberedAt: new Date(),
+          currThinkingTime: thinkingTime,
+          thinkingTime,
+        }),
+      );
     } else {
       await this.wordsHistoryRepository.update(
         { userId, wordsId },
@@ -128,8 +129,8 @@ export class SentenceService {
           currThinkingTime: thinkingTime,
           rememberedCount: history.rememberedCount + 1,
           // 注意顺序
-          lastRememberedAt: history.rememberedAt,
-          rememberedAt: new Date(),
+          lastRememberedAt: history.nextRememberedAt,
+          nextRememberedAt: new Date(),
         },
       );
     }

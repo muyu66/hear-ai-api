@@ -50,24 +50,18 @@ export class User {
   targetRetention!: number;
 
   /**
-   * 个人遗忘曲线 稳定值
-   * 默认值 1
-   */
-  @Column({ name: 'curr_stability', nullable: true })
-  currStability?: number;
-
-  /**
-   * 个人遗忘曲线 30天变化
-   */
-  @Column({ name: 'memory_curve', nullable: true, type: 'json' })
-  memoryCurve?: number[];
-
-  /**
    * 反转单词本比率
    * 比如之前是看英文想释义，现在是看释义想英文
    */
   @Column({ name: 'reverse_word_book_ratio' })
   reverseWordBookRatio!: number;
+
+  /**
+   * 活跃度等级 0-100
+   * 默认50
+   */
+  @Column({ name: 'active_level' })
+  activeLevel!: number;
 
   @Column({ name: 'wechat_openid', nullable: true })
   wechatOpenid?: string;
@@ -81,41 +75,39 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 
-  constructor(
-    account: string,
-    publicKey: string,
-    publicKeyExpiredAt: Date,
-    nickname: string,
-    rememberMethod: RememberMethod,
-    wordsLevel: WordsLevel,
-    useMinute: number,
-    multiSpeaker: boolean,
-    sayRatio: number,
-    targetRetention: number,
-    reverseWordBookRatio: number,
-    wechatOpenid?: string,
-    wechatUnionid?: string,
-    currStability?: number,
-    memoryCurve?: number[],
-    deviceInfo?: string,
-    avatar?: string,
-  ) {
-    this.account = account;
-    this.publicKey = publicKey;
-    this.publicKeyExpiredAt = publicKeyExpiredAt;
-    this.nickname = nickname;
-    this.avatar = avatar;
-    this.rememberMethod = rememberMethod;
-    this.wordsLevel = wordsLevel;
-    this.useMinute = useMinute;
-    this.multiSpeaker = multiSpeaker;
-    this.sayRatio = sayRatio;
-    this.targetRetention = targetRetention;
-    this.reverseWordBookRatio = reverseWordBookRatio;
-    this.wechatOpenid = wechatOpenid;
-    this.wechatUnionid = wechatUnionid;
-    this.currStability = currStability;
-    this.memoryCurve = memoryCurve;
-    this.deviceInfo = deviceInfo;
+  constructor(params?: {
+    account: string;
+    publicKey: string;
+    publicKeyExpiredAt: Date;
+    nickname: string;
+    rememberMethod: RememberMethod;
+    wordsLevel: WordsLevel;
+    useMinute: number;
+    multiSpeaker: boolean;
+    sayRatio: number;
+    targetRetention: number;
+    reverseWordBookRatio: number;
+    wechatOpenid?: string;
+    wechatUnionid?: string;
+    deviceInfo?: string;
+    avatar?: string;
+  }) {
+    if (params) {
+      this.account = params.account;
+      this.publicKey = params.publicKey;
+      this.publicKeyExpiredAt = params.publicKeyExpiredAt;
+      this.nickname = params.nickname;
+      this.avatar = params.avatar;
+      this.rememberMethod = params.rememberMethod;
+      this.wordsLevel = params.wordsLevel;
+      this.useMinute = params.useMinute;
+      this.multiSpeaker = params.multiSpeaker;
+      this.sayRatio = params.sayRatio;
+      this.targetRetention = params.targetRetention;
+      this.reverseWordBookRatio = params.reverseWordBookRatio;
+      this.wechatOpenid = params.wechatOpenid;
+      this.wechatUnionid = params.wechatUnionid;
+      this.deviceInfo = params.deviceInfo;
+    }
   }
 }
