@@ -32,7 +32,7 @@ export class ShortTermAlgorithmService implements IAlgorithm {
     }
 
     // 自定义成功标准
-    const isSuccess = quality < 3;
+    const isSuccess = quality >= 3;
 
     if (isSuccess) {
       // 阶段推进

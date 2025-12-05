@@ -62,7 +62,7 @@ export class WordBook implements RememberModel {
   difficulty?: number;
 
   @Column({ name: 'short_stage_index', nullable: true })
-  shortStageindex?: number;
+  shortStageIndex?: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
@@ -85,7 +85,7 @@ export class WordBook implements RememberModel {
     currThinkingTime: number;
     stability?: number;
     difficulty?: number;
-    shortStageindex?: number;
+    shortStageIndex?: number;
   }) {
     if (params) {
       this.userId = params.userId;
@@ -102,7 +102,7 @@ export class WordBook implements RememberModel {
       this.currThinkingTime = params.currThinkingTime;
       this.stability = params.stability;
       this.difficulty = params.difficulty;
-      this.shortStageindex = params.shortStageindex;
+      this.shortStageIndex = params.shortStageIndex;
     }
   }
 }

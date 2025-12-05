@@ -201,9 +201,9 @@ export class MyWordService {
     }
 
     const newModel = this.wordBookRepository.merge(model, safeRememberModel);
-    console.log('newModel', newModel);
-    console.log('safeRememberModel', safeRememberModel);
     console.log('model', model);
+    console.log('safeRememberModel', safeRememberModel);
+    console.log('newModel', newModel);
     await this.wordBookRepository.insert(newModel);
     return true;
   }

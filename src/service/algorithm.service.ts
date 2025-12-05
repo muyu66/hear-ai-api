@@ -29,11 +29,12 @@ export class AlgorithmService {
     model.rememberedCount += 1;
 
     // 计算
+    const copyModel = { ...model };
     const algorithm = this.factory.getAlgorithm(user.rememberMethod);
-    const newModel = algorithm.handle(model, user);
+    const newModel = algorithm.handle(copyModel, user);
 
     // 在计算之后赋值
-    model.lastRememberedAt = new Date();
+    newModel.lastRememberedAt = new Date();
 
     return newModel;
   }
@@ -43,7 +44,8 @@ export class AlgorithmService {
    */
   first(model: RememberModel, user: User): Partial<RememberModel> {
     // 计算
+    const copyModel = { ...model };
     const algorithm = this.factory.getAlgorithm(user.rememberMethod);
-    return algorithm.handle(model, user);
+    return algorithm.handle(copyModel, user);
   }
 }
