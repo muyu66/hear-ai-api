@@ -118,32 +118,15 @@ export class MyWordService {
       return;
     }
 
-    // 在计算之前赋值
-    model.currHintCount = hintCount;
-    model.hintCount += hintCount;
-    model.currThinkingTime = thinkingTime;
-    model.thinkingTime += thinkingTime;
-    model.rememberedAt = now;
-    model.rememberedCount += 1;
-
-    // 计算
-    const newModel = this.algorithmService.handle(model, user);
-    if (newModel == null) {
-      this.logger.error(
-        `算法计算失败 wordBookId=${model.id} rememberMethod=${user.rememberMethod}`,
-      );
-      // 回滚最基础算法
-      model.rememberedAt = dayjs(now).add(1, 'day').toDate();
+    const safeModel = this.algorithmService.handle(
+      { word, hintCount, thinkingTime },
+      model,
+      user,
+    );
+    if (safeModel == null) {
+      return;
     }
-
-    // 在计算之后赋值, 以此指定某些安全字段可以覆盖
-    // 注意顺序
-    model.lastRememberedAt = model.rememberedAt;
-    model.rememberedAt = newModel!.rememberedAt;
-    model.easeFactor = newModel!.easeFactor;
-    model.repetitionZeroHintCount = newModel!.repetitionZeroHintCount;
-
-    await this.wordBookRepository.save(model);
+    await this.wordBookRepository.save(safeModel);
   }
 
   async badWordBook(userId: number, word: string) {
@@ -172,11 +155,16 @@ export class MyWordService {
   }
 
   async add(userId: number, word: string, wordLang: Lang, from: string) {
+    const user = await this.authService.getUserProfile(userId);
+    if (!user) {
+      return false;
+    }
+
     const exist = await this.wordBookRepository.existsBy({ userId, word });
     if (exist) {
       return false;
     }
-    await this.wordBookRepository.insert({
+    const model = new WordBook({
       userId,
       word,
       wordLang,
@@ -192,6 +180,16 @@ export class MyWordService {
       currThinkingTime: 0,
       badScore: 0,
     });
+
+    const safeModel = this.algorithmService.handle(
+      { word, hintCount: 0, thinkingTime: 0 },
+      model,
+      user,
+    );
+    if (safeModel == null) {
+      return false;
+    }
+    await this.wordBookRepository.insert(safeModel);
     return true;
   }
 }

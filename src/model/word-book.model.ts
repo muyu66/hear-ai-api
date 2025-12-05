@@ -63,4 +63,10 @@ export class WordBook implements RememberModel {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
+
+  constructor(init?: Partial<WordBook>) {
+    if (init) {
+      Object.assign(this, init);
+    }
+  }
 }
