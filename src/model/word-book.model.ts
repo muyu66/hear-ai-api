@@ -35,7 +35,7 @@ export class WordBook implements RememberModel {
   rememberedCount!: number;
 
   @Column({ name: 'next_remembered_at' })
-  nextRememberedAt?: Date;
+  nextRememberedAt!: Date;
 
   @Column({ name: 'last_remembered_at', nullable: true })
   lastRememberedAt?: Date;
@@ -52,17 +52,26 @@ export class WordBook implements RememberModel {
   @Column({ name: 'curr_thinking_time' })
   currThinkingTime!: number;
 
-  /**
-   * 稳定值
-   */
-  @Column({ name: 'stability', nullable: true })
-  stability?: number;
+  @Column({ name: 'fsrs_stability', nullable: true })
+  fsrsStability?: number;
 
-  @Column({ name: 'difficulty', nullable: true })
-  difficulty?: number;
+  @Column({ name: 'fsrs_difficulty', nullable: true })
+  fsrsDifficulty?: number;
 
-  @Column({ name: 'short_stage_index', nullable: true })
-  shortStageIndex?: number;
+  @Column({ name: 'fsrs_lapses', nullable: true })
+  fsrsLapses?: number;
+
+  @Column({ name: 'fsrs_learning_steps', nullable: true })
+  fsrsLearningSteps?: number;
+
+  @Column({ name: 'fsrs_state', nullable: true })
+  fsrsState?: number;
+
+  @Column({ name: 'sm2_efactor', nullable: true })
+  sm2Efactor?: number;
+
+  @Column({ name: 'sm2_success_remembered_count', nullable: true })
+  sm2SuccessRememberedCount?: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
@@ -77,15 +86,19 @@ export class WordBook implements RememberModel {
     from: string;
     badScore: number;
     rememberedCount: number;
-    nextRememberedAt?: Date;
+    nextRememberedAt: Date;
     lastRememberedAt?: Date;
     currHintCount: number;
     hintCount: number;
     thinkingTime: number;
     currThinkingTime: number;
-    stability?: number;
-    difficulty?: number;
-    shortStageIndex?: number;
+    fsrsStability?: number;
+    fsrsDifficulty?: number;
+    fsrsLapses?: number;
+    fsrsLearningSteps?: number;
+    fsrsState?: number;
+    sm2Efactor?: number;
+    sm2SuccessRememberedCount?: number;
   }) {
     if (params) {
       this.userId = params.userId;
@@ -100,9 +113,13 @@ export class WordBook implements RememberModel {
       this.hintCount = params.hintCount;
       this.thinkingTime = params.thinkingTime;
       this.currThinkingTime = params.currThinkingTime;
-      this.stability = params.stability;
-      this.difficulty = params.difficulty;
-      this.shortStageIndex = params.shortStageIndex;
+      this.fsrsStability = params.fsrsStability;
+      this.fsrsDifficulty = params.fsrsDifficulty;
+      this.fsrsLapses = params.fsrsLapses;
+      this.fsrsLearningSteps = params.fsrsLearningSteps;
+      this.fsrsState = params.fsrsState;
+      this.sm2Efactor = params.sm2Efactor;
+      this.sm2SuccessRememberedCount = params.sm2SuccessRememberedCount;
     }
   }
 }

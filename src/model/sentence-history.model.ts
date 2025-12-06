@@ -1,4 +1,3 @@
-import { RememberModel } from 'src/interface/remember-model';
 import {
   Column,
   CreateDateColumn,
@@ -8,7 +7,7 @@ import {
 } from 'typeorm';
 
 @Entity()
-export class SentenceHistory implements RememberModel {
+export class SentenceHistory {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -39,18 +38,6 @@ export class SentenceHistory implements RememberModel {
   @Column({ name: 'curr_thinking_time' })
   currThinkingTime!: number;
 
-  /**
-   * 稳定值
-   */
-  @Column({ name: 'stability', nullable: true })
-  stability?: number;
-
-  @Column({ name: 'difficulty', nullable: true })
-  difficulty?: number;
-
-  @Column({ name: 'short_stage_index', nullable: true })
-  shortStageIndex?: number;
-
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
@@ -67,9 +54,6 @@ export class SentenceHistory implements RememberModel {
     hintCount: number;
     thinkingTime: number;
     currThinkingTime: number;
-    stability?: number;
-    difficulty?: number;
-    shortStageIndex?: number;
   }) {
     if (params) {
       this.userId = params.userId;
@@ -81,9 +65,6 @@ export class SentenceHistory implements RememberModel {
       this.hintCount = params.hintCount;
       this.thinkingTime = params.thinkingTime;
       this.currThinkingTime = params.currThinkingTime;
-      this.stability = params.stability;
-      this.difficulty = params.difficulty;
-      this.shortStageIndex = params.shortStageIndex;
     }
   }
 }

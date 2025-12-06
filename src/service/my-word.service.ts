@@ -65,8 +65,8 @@ export class MyWordService {
       nowCount,
       todayDoneCount,
       stability:
-        user.rememberMethod !== RememberMethod.ST
-          ? nowFirst?.stability || 0
+        user.rememberMethod === RememberMethod.FSRS
+          ? nowFirst?.fsrsStability || 0
           : undefined,
     };
   }
@@ -128,20 +128,12 @@ export class MyWordService {
       this.logger.error(`用户无需复习 word=${word} userId=${userId}`);
       return;
     }
-
     const safeModel = this.algorithmService.handle(
       { word, hintCount, thinkingTime },
       model,
       user,
     );
-    if (safeModel == null) {
-      return;
-    }
     const newModel = this.wordBookRepository.merge(model, safeModel);
-    console.log('model', model);
-    console.log('safeModel', safeModel);
-    console.log('newModel', newModel);
-
     await this.wordBookRepository.save(newModel);
   }
 
@@ -188,22 +180,22 @@ export class MyWordService {
       rememberedCount: 0,
       hintCount: 0,
       currHintCount: 0,
-      nextRememberedAt: undefined,
+      nextRememberedAt: new Date(),
       lastRememberedAt: undefined,
       thinkingTime: 0,
       currThinkingTime: 0,
       badScore: 0,
     });
-
-    const safeRememberModel = this.algorithmService.first(model, user);
-    if (safeRememberModel == null) {
-      return false;
-    }
-
+    const safeRememberModel = this.algorithmService.handle(
+      {
+        word,
+        hintCount: 4,
+        thinkingTime: 0,
+      },
+      model,
+      user,
+    );
     const newModel = this.wordBookRepository.merge(model, safeRememberModel);
-    console.log('model', model);
-    console.log('safeRememberModel', safeRememberModel);
-    console.log('newModel', newModel);
     await this.wordBookRepository.insert(newModel);
     return true;
   }

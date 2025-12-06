@@ -1,25 +1,33 @@
 import { Module, Provider } from '@nestjs/common';
 import { ALGORITHM, AlgorithmFactory } from './algorithm';
-import { SMCAlgorithmService } from './smc.algorithm';
-import { ShortTermAlgorithmService } from './short-term.algorithm';
-import { SMZAlgorithmService } from './smz.algorithm';
+import { FsrsAlgorithmService } from './fsrs.algorithm';
+import { ZhuzhuAlgorithmService } from './zhuzhu.algorithm';
+import { FsrsStAlgorithmService } from './fsrs-st.algorithm';
+import { SM2AlgorithmService } from './sm2.algorithm';
 
 // 提供算法数组给工厂
 const AlgorithmFactoryProvider: Provider = {
   provide: ALGORITHM,
   useFactory: (
-    smc: SMCAlgorithmService,
-    st: ShortTermAlgorithmService,
-    smz: SMZAlgorithmService,
-  ) => [smc, st, smz],
-  inject: [SMCAlgorithmService, SMZAlgorithmService, ShortTermAlgorithmService],
+    fsrs: FsrsAlgorithmService,
+    fsrsst: FsrsStAlgorithmService,
+    sm2: SM2AlgorithmService,
+    zhuzhu: ZhuzhuAlgorithmService,
+  ) => [fsrs, fsrsst, sm2, zhuzhu],
+  inject: [
+    FsrsAlgorithmService,
+    FsrsStAlgorithmService,
+    SM2AlgorithmService,
+    ZhuzhuAlgorithmService,
+  ],
 };
 
 @Module({
   providers: [
-    SMCAlgorithmService,
-    ShortTermAlgorithmService,
-    SMZAlgorithmService,
+    FsrsAlgorithmService,
+    FsrsStAlgorithmService,
+    SM2AlgorithmService,
+    ZhuzhuAlgorithmService,
 
     AlgorithmFactoryProvider,
     AlgorithmFactory,

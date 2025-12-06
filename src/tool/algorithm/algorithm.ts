@@ -2,19 +2,32 @@ import { Inject, Injectable } from '@nestjs/common';
 import { RememberModel } from 'src/interface/remember-model';
 import { User } from 'src/model/user.model';
 
-export interface IAlgorithm {
+export interface IAlgorithm<Grade, Card, Parameters> {
   type: string; // 每个算法类都提供自己的标识
 
-  handle(sourceModel: RememberModel, user: User): Partial<RememberModel>;
+  build(model?: RememberModel): Card;
+
+  buildParams(user: User): Parameters;
+
+  buildGrade(model: RememberModel): Grade;
+
+  resolve(card: Card): Partial<RememberModel>;
+
+  handle(grade: Grade, card: Card, params: Parameters, now?: Date): Card;
 }
 
 export const ALGORITHM = 'ALGORITHM';
 
 @Injectable()
 export class AlgorithmFactory {
-  private algorithmMap = new Map<string, IAlgorithm>();
+  private algorithmMap = new Map<
+    string,
+    IAlgorithm<unknown, unknown, unknown>
+  >();
 
-  constructor(@Inject(ALGORITHM) algorithms: IAlgorithm[]) {
+  constructor(
+    @Inject(ALGORITHM) algorithms: IAlgorithm<unknown, unknown, unknown>[],
+  ) {
     algorithms.forEach((algo) => {
       this.algorithmMap.set(algo.type, algo);
     });
@@ -25,13 +38,13 @@ export class AlgorithmFactory {
    * @param type
    * @returns 找不到则返回默认算法
    */
-  getAlgorithm(type: string): IAlgorithm {
+  getAlgorithm(type: string): IAlgorithm<unknown, unknown, unknown> {
     const algo = this.algorithmMap.get(type);
-    if (!algo) return this.algorithmMap.get('st')!;
+    if (!algo) return this.algorithmMap.get('sm2')!;
     return algo;
   }
 
-  getAlgorithms(): IAlgorithm[] {
+  getAlgorithms(): IAlgorithm<unknown, unknown, unknown>[] {
     const algoes = this.algorithmMap.values();
     return Array.from(algoes);
   }

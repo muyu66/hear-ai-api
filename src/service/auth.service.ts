@@ -121,7 +121,7 @@ export class AuthService {
         publicKey: data.publicKeyBase64,
         publicKeyExpiredAt: dayjs().add(30, 'day').toDate(),
         nickname: data.nickname ?? generateCuteNickname({ forcePrefix: true }),
-        rememberMethod: RememberMethod.SMZ,
+        rememberMethod: RememberMethod.FSRS,
         wordsLevel: WordsLevel.EASY,
         deviceInfo: data.deviceInfo,
         useMinute: 5,

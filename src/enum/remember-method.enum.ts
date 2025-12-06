@@ -1,5 +1,6 @@
 export enum RememberMethod {
-  SMZ = 'smz',
-  SMC = 'smc',
-  ST = 'st',
+  FSRS = 'fsrs',
+  FSRSST = 'fsrsst',
+  ZHUZHU = 'zhuzhu',
+  SM2 = 'sm2',
 }
