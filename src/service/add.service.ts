@@ -88,7 +88,17 @@ export class AddService {
     }
   }
 
-  async addVoices(
+  async addVoices(speakerObj: { name: string; id: string }) {
+    const indexBuff = await this.voiceStore.getBuffer(
+      this.voiceStore.getFileIndexName(speakerObj.name, 'words'),
+    );
+    const index = indexBuff?.toString('utf8')
+      ? Number(indexBuff?.toString('utf8'))
+      : 0;
+    return this.addVoicesCore(speakerObj, index);
+  }
+
+  async addVoicesCore(
     speakerObj: { name: string; id: string },
     offset: number = 0,
   ) {
@@ -115,13 +125,13 @@ export class AddService {
         );
         if (exist) {
           this.logger.debug(
-            `音频已存在，跳过 Speaker=${speakerObj.name} Words=${wordModel.source} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+            `音频已存在，跳过 Speaker=${speakerObj.name} WordsId=${wordModel.id} Words=${wordModel.source} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
           );
           continue;
         }
 
         this.logger.debug(
-          `正在获取 Speaker=${speakerObj.name} Words=${wordModel.source} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+          `正在获取 Speaker=${speakerObj.name} WordsId=${wordModel.id} Words=${wordModel.source} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
         );
         const wavVoice = await this.voiceAliRequest.request(
           wordModel.source,
@@ -130,7 +140,7 @@ export class AddService {
         );
 
         this.logger.debug(
-          `正在Opus转码 Speaker=${speakerObj.name} Words=${wordModel.source} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+          `正在Opus转码 Speaker=${speakerObj.name} WordsId=${wordModel.id} Words=${wordModel.source} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
         );
         const opusVoice = await formatBufferWavToOpus(wavVoice);
 
@@ -143,6 +153,9 @@ export class AddService {
           ),
           opusVoice,
         );
+        this.logger.debug(
+          `上传音频成功 Speaker=${speakerObj.name} WordsId=${wordModel.id} Words=${wordModel.source} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+        );
       }
 
       // 上传当前索引
@@ -151,9 +164,9 @@ export class AddService {
         Buffer.from(offset + ''),
       );
 
-      await sleep(2000);
+      await sleep(200);
       offset++;
-      await this.addVoices(speakerObj, offset);
+      await this.addVoicesCore(speakerObj, offset);
     } catch (e) {
       this.logger.error(e);
     }

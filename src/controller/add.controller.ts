@@ -28,8 +28,8 @@ export class AddController {
     if (this.configService.env !== 'development') {
       return;
     }
-    const speakerObj = this.voiceSpeaker.ALI_EVA;
-    return this.addService.addVoices(speakerObj, 0);
+    const speakerObj = this.voiceSpeaker.ALI_CALLY;
+    return this.addService.addVoices(speakerObj);
   }
 
   @Get('word-voices')
