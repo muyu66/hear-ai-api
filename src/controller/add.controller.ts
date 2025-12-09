@@ -28,7 +28,7 @@ export class AddController {
     if (this.configService.env !== 'development') {
       return;
     }
-    const speakerObj = this.voiceSpeaker.ALI_CALLY;
+    const speakerObj = this.voiceSpeaker.ALI_ERIC;
     return this.addService.addVoices(speakerObj);
   }
 

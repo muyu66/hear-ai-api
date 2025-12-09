@@ -173,48 +173,51 @@ export class AddService {
   }
 
   async addWordVoices(speakerObj: { name: string; id: string }) {
+    const limit = 30;
+    // 14826
+
     const indexBuff = await this.voiceStore.getBuffer(
       this.voiceStore.getFileIndexName(speakerObj.name, 'word'),
     );
-    const index = indexBuff?.toString('utf8')
+    let lastId = indexBuff?.toString('utf8')
       ? Number(indexBuff?.toString('utf8'))
       : 0;
-    return this.addWordVoicesCore(speakerObj, index, []);
-  }
+    const done: Set<string> = new Set();
 
-  private async addWordVoicesCore(
-    speakerObj: { name: string; id: string },
-    offset: number = 0,
-    done: string[],
-  ) {
-    try {
+    while (true) {
       // 因为API限制，目前一个一个处理
       this.logger.debug(
-        `正在获取单词音频 Speaker=${speakerObj.name} Offset=${offset} 音频...`,
+        `正在获取单词音频 Speaker=${speakerObj.name} lastId=${lastId} 音频...`,
       );
-      const wordModel = await this.sentenceRepository
+      const wordModels = await this.sentenceRepository
         .createQueryBuilder('w')
-        .limit(1)
-        .offset(offset)
+        .select(['w.source', 'w.id'])
+        .where('w.id > :lastId', { lastId })
+        .limit(limit)
         .orderBy('w.id', 'ASC')
-        .getOneOrFail();
+        .getMany();
+
+      if (wordModels.length === 0) {
+        this.logger.debug(
+          `已经完成所有任务 wordModelsCount=${wordModels.length} lastId=${lastId} ...`,
+        );
+        return;
+      }
 
       const tokenizer = new WordTokenizer();
       const words = tokenizer
-        .tokenize(wordModel.source)
+        .tokenize(wordModels.map((v) => v.source).join(' '))
         .map((v) => v.toLowerCase());
 
       for (const word of words) {
-        if (done.includes(word)) {
+        if (done.has(word)) {
           this.logger.debug(
-            `[缓存数量=${done.length}] 单词已缓存无需处理，跳过 Word=${word} Speaker=${speakerObj.name} WordsId=${wordModel.id} Offset=${offset} 音频...`,
+            `[缓存数量=${done.size}] 单词已缓存无需处理，跳过 Word=${word} Speaker=${speakerObj.name} lastId=${lastId} 音频...`,
           );
           continue;
         }
-        await sleep(200);
-
         this.logger.debug(
-          `正在获取单词音频 Word=${word} Speaker=${speakerObj.name} Offset=${offset} 音频...`,
+          `正在获取单词音频 Word=${word} Speaker=${speakerObj.name} lastId=${lastId} 音频...`,
         );
 
         for (const isSlow of [false, true]) {
@@ -223,13 +226,13 @@ export class AddService {
           );
           if (exist) {
             this.logger.debug(
-              `单词音频音频已存在，跳过 Word=${word} Speaker=${speakerObj.name} WordsId=${wordModel.id} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+              `单词音频音频已存在，跳过 Word=${word} Speaker=${speakerObj.name} lastId=${lastId} ${isSlow ? '慢速' : '正常'}音频...`,
             );
             continue;
           }
 
           this.logger.debug(
-            `正在获取单词音频 Word=${word} Speaker=${speakerObj.name} WordsId=${wordModel.id} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+            `正在获取单词音频 Word=${word} Speaker=${speakerObj.name} lastId=${lastId} ${isSlow ? '慢速' : '正常'}音频...`,
           );
           const wavVoice = await this.voiceAliRequest.request(
             word,
@@ -238,7 +241,7 @@ export class AddService {
           );
 
           this.logger.debug(
-            `正在单词音频Opus转码 Word=${word} Speaker=${speakerObj.name} WordsId=${wordModel.id} Offset=${offset} ${isSlow ? '慢速' : '正常'}音频...`,
+            `正在单词音频Opus转码 Word=${word} Speaker=${speakerObj.name} lastId=${lastId} ${isSlow ? '慢速' : '正常'}音频...`,
           );
           const opusVoice = await formatBufferWavToOpus(wavVoice);
 
@@ -247,26 +250,24 @@ export class AddService {
             opusVoice,
           );
         }
+        done.add(word);
       }
-      done.push(...words);
+
+      const maxId = _.maxBy(wordModels, 'id')?.id;
+      lastId = maxId!;
+      this.logger.debug(`本轮最大ID maxId=${lastId} ...`);
 
       // 上传当前索引
       await this.voiceStore.upload(
         this.voiceStore.getFileIndexName(speakerObj.name, 'word'),
-        Buffer.from(offset + ''),
+        Buffer.from(lastId + ''),
       );
-
-      await sleep(2000);
-      offset++;
-      await this.addWordVoicesCore(speakerObj, offset, done);
-    } catch (e) {
-      this.logger.error(e);
     }
   }
 
   async addAiDict() {
     let lastId = await this.getLastProcessedId(this.FILE_PATH_ADD_DICT);
-    const limit = 30;
+    const limit = 10;
 
     while (true) {
       this.logger.debug(`准备获取词典 lastId=${lastId} ...`);
