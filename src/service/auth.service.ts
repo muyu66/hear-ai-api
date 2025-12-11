@@ -129,6 +129,7 @@ export class AuthService {
         sayRatio: 20,
         reverseWordBookRatio: 20,
         targetRetention: 90,
+        activeLevel: 50,
         wechatOpenid: data.wechatOpenid,
         wechatUnionid: data.wechatUnionid,
       }),

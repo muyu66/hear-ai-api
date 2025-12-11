@@ -87,6 +87,7 @@ export class User {
     sayRatio: number;
     targetRetention: number;
     reverseWordBookRatio: number;
+    activeLevel: number;
     wechatOpenid?: string;
     wechatUnionid?: string;
     deviceInfo?: string;
@@ -105,6 +106,7 @@ export class User {
       this.sayRatio = params.sayRatio;
       this.targetRetention = params.targetRetention;
       this.reverseWordBookRatio = params.reverseWordBookRatio;
+      this.activeLevel = params.activeLevel;
       this.wechatOpenid = params.wechatOpenid;
       this.wechatUnionid = params.wechatUnionid;
       this.deviceInfo = params.deviceInfo;

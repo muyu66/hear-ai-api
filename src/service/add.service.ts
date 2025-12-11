@@ -321,7 +321,11 @@ export class AddService {
             .replace(/```$/, ''),
         );
         const models = objects.map((object) => {
-          return new AiDict(object.word, object.phonetic, object.translation);
+          return new AiDict(
+            object.word.toLowerCase(),
+            object.phonetic,
+            object.translation,
+          );
         });
         await this.aiDictRepository.insert(models);
         this.logger.debug(
