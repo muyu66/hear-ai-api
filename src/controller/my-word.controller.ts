@@ -1,12 +1,13 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import _ from 'lodash';
 import { Auth } from 'src/decorator/auth.decorator';
 import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
 import { AuthDto } from 'src/dto/auth.dto';
 import {
   AddMyWordDto,
   MyWordDto,
-  RememberWordDto,
   MyWordSummaryDto,
+  RememberWordDto,
 } from 'src/dto/my-word.dto';
 import { Lang } from 'src/enum/lang.enum';
 import { RequiredParamPipe } from 'src/pipe/required-param.pipe';
@@ -47,18 +48,33 @@ export class MyWordController {
       20,
       offset,
     );
-    const words = wordBooks.map((v) => v.word);
-    const aiDicts = await this.dictService.getDictsByWords('ai', words);
-    const dicts = await this.dictService.getDictsByWords('ecdict', words);
+
+    // 按语言分组
+    const tasks = _.groupBy(wordBooks, (v) => v.wordLang);
+
+    // 并行查询每组字典
+    const dictPromises = Object.entries(tasks).map(async ([langKey, items]) => {
+      const lang = langKey as Lang;
+      const words = items.map((v) => v.word);
+      if (words.length === 0) return [];
+      return this.dictService.getDictsByWords(words, user.sourceLang, lang);
+    });
+
+    const dictsArray = await Promise.all(dictPromises);
+
+    // 合并所有查询结果
+    const dicts = dictsArray.flat();
+
+    // 构建 word -> dict 映射，提高查找效率
+    const dictMap = new Map(dicts.map((d) => [d.word, d]));
 
     return wordBooks.map((item) => {
-      const aiDict = aiDicts.find((v) => v.word === item.word);
-      const dict = dicts.find((v) => v.word === item.word);
-
+      const dict = dictMap.get(item.word);
       return {
         word: item.word,
-        phonetic: aiDict?.phonetic ?? dict?.phonetic,
-        translation: aiDict?.translation ?? dict?.translation,
+        wordLang: item.wordLang,
+        phonetic: dict?.phonetic,
+        translation: dict?.translation,
         type: randomAB('source', 'target', user.reverseWordBookRatio),
       } satisfies MyWordDto;
     });

@@ -33,10 +33,6 @@ export class ConfigService {
     return this.configService.get('JWT_SECRET');
   }
 
-  get googleClientId(): string | undefined {
-    return this.configService.get('GOOGLE_CLIENT_ID');
-  }
-
   get wxAppId(): string | undefined {
     return this.configService.get('WX_APP_ID');
   }
@@ -72,16 +68,5 @@ export class ConfigService {
 
   get mysqlDatabase(): string | undefined {
     return this.configService.get('MYSQL_DATABASE');
-  }
-
-  /**
-   * 布隆过滤器持久化间隔
-   * 单位毫秒
-   */
-  get bloomFilterSaveInterval(): number {
-    const value = this.configService.get(
-      'BLOOM_FILTER_SAVE_INTERVAL',
-    ) as string;
-    return value ? parseInt(value) : 5000;
   }
 }

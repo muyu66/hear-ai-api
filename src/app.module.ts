@@ -12,15 +12,14 @@ import { DictController } from './controller/dict.controller';
 import { MyWordController } from './controller/my-word.controller';
 import { SentenceController } from './controller/sentence.controller';
 import { SplashController } from './controller/splash.controller';
-import { WordController } from './controller/word.controller';
 import { AuthGuard } from './guard/auth.guard';
 import { ClientGuard } from './guard/client.guard';
 import { AiDict } from './model/ai-dict.model';
-import { BloomFilterShard } from './model/bloom-filter-shard.model';
-import { Dict } from './model/dict.model';
+import { DictPronunciation } from './model/dict-pronunciation.model';
 import { SentenceHistory } from './model/sentence-history.model';
+import { SentencePronunciation } from './model/sentence-pronunciation.model';
 import { Sentence } from './model/sentence.model';
-import { UserWordsPool } from './model/user-words-pool.model';
+import { UserLoginHistory } from './model/user-login-history.model';
 import { User } from './model/user.model';
 import { WelcomeWords } from './model/welcome-words.model';
 import { WordBook } from './model/word-book.model';
@@ -29,17 +28,15 @@ import { AlgorithmService } from './service/algorithm.service';
 import { AppService } from './service/app.service';
 import { AuthService } from './service/auth.service';
 import { ConfigService } from './service/config.service';
+import { DictPronunciationService } from './service/dict-pronunciation.service';
+import { DictService } from './service/dict.service';
 import { MyWordService } from './service/my-word.service';
+import { SentencePronunciationService } from './service/sentence-pronunciation.service';
 import { SentenceService } from './service/sentence.service';
-import { TaskService } from './service/task.service';
 import { AiRequest } from './tool/ai-request';
 import { AlgorithmModule } from './tool/algorithm/algorithm.module';
-import { VoiceStore } from './tool/voice-store';
 import { VoiceAliRequest } from './tool/voice/voice-ali-request';
 import { VoiceMurfRequest } from './tool/voice/voice-murf-request';
-import { VoiceSpeaker } from './tool/voice/voice-speaker';
-import { DictService } from './service/dict.service';
-import { UserLoginHistory } from './model/user-login-history.model';
 
 @Module({
   imports: [
@@ -69,13 +66,12 @@ import { UserLoginHistory } from './model/user-login-history.model';
       Sentence,
       User,
       WordBook,
-      BloomFilterShard,
-      UserWordsPool,
-      Dict,
       WelcomeWords,
       SentenceHistory,
       AiDict,
       UserLoginHistory,
+      SentencePronunciation,
+      DictPronunciation,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -95,12 +91,11 @@ import { UserLoginHistory } from './model/user-login-history.model';
     AddController,
     MyWordController,
     SplashController,
-    WordController,
   ],
   providers: [
+    DictPronunciationService,
     DictService,
     MyWordService,
-    TaskService,
     AlgorithmService,
     AuthService,
     ConfigService,
@@ -109,6 +104,7 @@ import { UserLoginHistory } from './model/user-login-history.model';
     AddService,
     VoiceMurfRequest,
     VoiceAliRequest,
+    SentencePronunciationService,
     AiRequest,
     {
       provide: APP_GUARD,
@@ -118,9 +114,6 @@ import { UserLoginHistory } from './model/user-login-history.model';
       provide: APP_GUARD,
       useClass: ClientGuard,
     },
-    // BloomFilterService,
-    VoiceStore,
-    VoiceSpeaker,
   ],
 })
 export class AppModule {}

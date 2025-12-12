@@ -1,10 +1,20 @@
-import { IsOptional, Length, Matches, Max, Min } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsEnum,
+  IsOptional,
+  Length,
+  Matches,
+  Max,
+  Min,
+} from 'class-validator';
 import { ClientType } from 'src/constant/contant';
+import { Lang } from 'src/enum/lang.enum';
 import { RememberMethod } from 'src/enum/remember-method.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
 
 export class AuthDto {
-  userId!: number;
+  userId!: string;
   clientType!: ClientType;
 }
 
@@ -19,6 +29,8 @@ export class AuthProfileDto {
   sayRatio!: number;
   reverseWordBookRatio?: number;
   targetRetention!: number;
+  sourceLang!: Lang;
+  targetLangs!: Lang[];
 }
 
 export class AuthProfileUpdateDto {
@@ -33,6 +45,7 @@ export class AuthProfileUpdateDto {
   @IsOptional()
   multiSpeaker?: boolean;
   @IsOptional()
+  @IsEnum(WordsLevel)
   wordsLevel?: WordsLevel;
   @IsOptional()
   @Max(100)
@@ -46,6 +59,14 @@ export class AuthProfileUpdateDto {
   @Max(95)
   @Min(80)
   targetRetention?: number;
+  @IsOptional()
+  @IsEnum(Lang)
+  sourceLang?: Lang;
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsEnum(Lang, { each: true })
+  targetLangs?: Lang[];
 }
 
 export class RegisterDto {
@@ -64,8 +85,8 @@ export class IssueRefreshDto {
 }
 
 export class JwtPayload {
-  sub!: number; // 用户ID
-  userId!: number;
+  sub!: string; // 用户ID
+  userId!: string;
   type!: 'access';
   clientType!: ClientType;
 }

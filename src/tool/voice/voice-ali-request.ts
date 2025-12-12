@@ -45,7 +45,7 @@ export class VoiceAliRequest implements VoiceRequest {
           text: words,
           format: 'wav',
           sample_rate: 16000,
-          voice: speakerId ? speakerId : 'cally',
+          voice: speakerId,
           speech_rate: slow ? -500 : 0,
         },
         {

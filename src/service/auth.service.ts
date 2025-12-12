@@ -24,6 +24,8 @@ import { calculateActiveLevel } from 'src/tool/tool';
 import nacl from 'tweetnacl';
 import { Repository } from 'typeorm';
 import { ConfigService } from './config.service';
+import { Lang } from 'src/enum/lang.enum';
+import Identicon from 'identicon.js';
 
 @Injectable()
 export class AuthService {
@@ -73,7 +75,7 @@ export class AuthService {
     return { accessToken: cached?.accessToken };
   }
 
-  async updateProfile(userId: number, body: AuthProfileUpdateDto) {
+  async updateProfile(userId: string, body: AuthProfileUpdateDto) {
     const user = await this.userRepository.findOneBy({ id: userId });
     if (user == null) {
       throw new NotFoundException('用户不存在');
@@ -91,15 +93,13 @@ export class AuthService {
         sayRatio: body.sayRatio,
         reverseWordBookRatio: body.reverseWordBookRatio,
         targetRetention: body.targetRetention,
+        sourceLang: body.sourceLang,
+        targetLangs: body.targetLangs,
       },
     );
-    // // 如果用户更新了 wordsLevel
-    // if (body.wordsLevel != null && user.wordsLevel !== body.wordsLevel) {
-    //   await this.wordsService.cleanUserPool(userId);
-    // }
   }
 
-  async getUserProfile(userId: number): Promise<User> {
+  async getUserProfile(userId: string): Promise<User> {
     const user = await this.userRepository.findOneBy({ id: userId });
     if (user == null) {
       throw new NotFoundException('用户不存在');
@@ -114,15 +114,24 @@ export class AuthService {
     deviceInfo?: string;
     wechatOpenid?: string;
     wechatUnionid?: string;
+    sourceLang: Lang;
+    targetLangs: Lang[];
+    level: WordsLevel;
   }) {
+    // 生成随机头像
+    const avatar = new Identicon(data.account, {
+      size: 72,
+      format: 'svg',
+    }).toString();
     return this.userRepository.save(
       new User({
         account: data.account,
         publicKey: data.publicKeyBase64,
         publicKeyExpiredAt: dayjs().add(30, 'day').toDate(),
         nickname: data.nickname ?? generateCuteNickname({ forcePrefix: true }),
+        avatar: avatar,
         rememberMethod: RememberMethod.FSRS,
-        wordsLevel: WordsLevel.EASY,
+        wordsLevel: data.level,
         deviceInfo: data.deviceInfo,
         useMinute: 5,
         multiSpeaker: true,
@@ -130,6 +139,8 @@ export class AuthService {
         reverseWordBookRatio: 20,
         targetRetention: 90,
         activeLevel: 50,
+        sourceLang: data.sourceLang,
+        targetLangs: data.targetLangs,
         wechatOpenid: data.wechatOpenid,
         wechatUnionid: data.wechatUnionid,
       }),
@@ -142,27 +153,32 @@ export class AuthService {
     signatureBase64: string,
     timestamp: string,
     deviceInfo?: string,
-  ) {
+  ): Promise<{ accessToken: string; newUser: boolean }> {
     let user = await this.userRepository.findOneBy({
       account,
     });
+    const newUser = !user;
     if (!user) {
       user = await this.createUser({
         account,
         publicKeyBase64,
         deviceInfo,
+        sourceLang: Lang.ZH_CN,
+        targetLangs: [Lang.EN],
+        level: WordsLevel.EASY,
       });
     }
 
-    return this.verifyAndIssueAccessToken(
+    const { accessToken } = this.verifyAndIssueAccessToken(
       user,
       signatureBase64,
       timestamp,
       'android',
     );
+    return { accessToken, newUser };
   }
 
-  async linkWechat(code: string, userId: number) {
+  async linkWechat(code: string, userId: string) {
     if (code == null || code === '') {
       throw new BadRequestException('微信授权码不能为空');
     }
@@ -197,7 +213,7 @@ export class AuthService {
     timestamp: string,
     code: string,
     deviceInfo?: string,
-  ) {
+  ): Promise<{ accessToken: string; newUser: boolean }> {
     if (code == null || code === '') {
       throw new BadRequestException('微信授权码不能为空');
     }
@@ -209,12 +225,16 @@ export class AuthService {
     let user = await this.userRepository.findOneBy({
       wechatOpenid: openid,
     });
+    const newUser = !user;
     if (!user) {
       // 可能是权限太低了，取不到昵称和unionid
       user = await this.createUser({
         account,
         publicKeyBase64,
         deviceInfo,
+        sourceLang: Lang.ZH_CN,
+        targetLangs: [Lang.EN],
+        level: WordsLevel.EASY,
         wechatOpenid: openid,
         wechatUnionid: undefined,
       });
@@ -229,12 +249,13 @@ export class AuthService {
       });
     }
 
-    return this.verifyAndIssueAccessToken(
+    const { accessToken } = this.verifyAndIssueAccessToken(
       user,
       signatureBase64,
       timestamp,
       'android',
     );
+    return { accessToken, newUser };
   }
 
   async signIn(
@@ -265,13 +286,13 @@ export class AuthService {
   }
 
   private async afterSignIn(
-    userId: number,
+    userId: string,
     account: string,
     deviceInfo?: string,
   ) {
     // 插入登录记录
     await this.userLoginHistoryRepository.insert(
-      new UserLoginHistory(userId, account, deviceInfo),
+      new UserLoginHistory({ userId, account, deviceInfo }),
     );
     // 计算登录间隔
     const loginHistories = await this.userLoginHistoryRepository.find({

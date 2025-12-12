@@ -34,7 +34,7 @@ export class AuthController {
   @Get('profile')
   async getProfile(@Auth() auth: AuthDto): Promise<AuthProfileDto> {
     const user = await this.authService.getUserProfile(auth.userId);
-    return <AuthProfileDto>{
+    return {
       nickname: user.nickname,
       avatar: user.avatar,
       rememberMethod: user.rememberMethod,
@@ -45,7 +45,9 @@ export class AuthController {
       sayRatio: user.sayRatio,
       reverseWordBookRatio: user.reverseWordBookRatio,
       targetRetention: user.targetRetention,
-    };
+      sourceLang: user.sourceLang,
+      targetLangs: user.targetLangs,
+    } satisfies AuthProfileDto;
   }
 
   @ClientAllowed('android')

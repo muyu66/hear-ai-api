@@ -1,20 +1,12 @@
 import { Lang } from 'src/enum/lang.enum';
 import { RememberModel } from 'src/interface/remember-model';
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity } from 'typeorm';
+import { BaseEntity } from './base.model';
 
 @Entity()
-export class WordBook implements RememberModel {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
+export class WordBook extends BaseEntity implements RememberModel {
   @Column({ name: 'user_id' })
-  userId!: number;
+  userId!: string;
 
   @Column()
   word!: string;
@@ -73,53 +65,8 @@ export class WordBook implements RememberModel {
   @Column({ name: 'sm2_success_remembered_count', nullable: true })
   sm2SuccessRememberedCount?: number;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt!: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt!: Date;
-
-  constructor(params?: {
-    userId: number;
-    word: string;
-    wordLang: Lang;
-    from: string;
-    badScore: number;
-    rememberedCount: number;
-    nextRememberedAt: Date;
-    lastRememberedAt?: Date;
-    currHintCount: number;
-    hintCount: number;
-    thinkingTime: number;
-    currThinkingTime: number;
-    fsrsStability?: number;
-    fsrsDifficulty?: number;
-    fsrsLapses?: number;
-    fsrsLearningSteps?: number;
-    fsrsState?: number;
-    sm2Efactor?: number;
-    sm2SuccessRememberedCount?: number;
-  }) {
-    if (params) {
-      this.userId = params.userId;
-      this.word = params.word;
-      this.wordLang = params.wordLang;
-      this.from = params.from;
-      this.badScore = params.badScore;
-      this.rememberedCount = params.rememberedCount;
-      this.nextRememberedAt = params.nextRememberedAt;
-      this.lastRememberedAt = params.lastRememberedAt;
-      this.currHintCount = params.currHintCount;
-      this.hintCount = params.hintCount;
-      this.thinkingTime = params.thinkingTime;
-      this.currThinkingTime = params.currThinkingTime;
-      this.fsrsStability = params.fsrsStability;
-      this.fsrsDifficulty = params.fsrsDifficulty;
-      this.fsrsLapses = params.fsrsLapses;
-      this.fsrsLearningSteps = params.fsrsLearningSteps;
-      this.fsrsState = params.fsrsState;
-      this.sm2Efactor = params.sm2Efactor;
-      this.sm2SuccessRememberedCount = params.sm2SuccessRememberedCount;
-    }
+  constructor(partial: Partial<WordBook>) {
+    super();
+    Object.assign(this, partial);
   }
 }

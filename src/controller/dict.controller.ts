@@ -1,14 +1,44 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { DictType } from 'src/constant/contant';
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  ParseBoolPipe,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
+import dayjs from 'dayjs';
+import { Auth } from 'src/decorator/auth.decorator';
 import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
+import { AuthDto } from 'src/dto/auth.dto';
+import { Lang } from 'src/enum/lang.enum';
 import { DictModel } from 'src/interface/dict-model';
 import { RequiredParamPipe } from 'src/pipe/required-param.pipe';
+import { AuthService } from 'src/service/auth.service';
+import { DictPronunciationService } from 'src/service/dict-pronunciation.service';
 import { DictService } from 'src/service/dict.service';
+import type { Response } from 'express';
 
 @ClientAllowed('android')
 @Controller('dicts')
 export class DictController {
-  constructor(private readonly dictService: DictService) {}
+  constructor(
+    private readonly dictService: DictService,
+    private readonly authService: AuthService,
+    private readonly dictPronunciationService: DictPronunciationService,
+  ) {}
+
+  /**
+   * 给这个词典里的单词打差评
+   * @param word
+   * @returns
+   */
+  @Post('bad-feedback')
+  async bad(@Body() body: { id: string }) {
+    return this.dictService.badDict(body.id);
+  }
 
   /**
    * 根据单词，获取词典的内容
@@ -18,20 +48,48 @@ export class DictController {
   @Get(':word')
   async getDict(
     @Param('word', new RequiredParamPipe()) word: string,
-  ): Promise<{ dict: DictType; dictName: string; model: DictModel }[]> {
-    return this.dictService.getDictsByWord(word);
+    @Query('lang', new RequiredParamPipe()) lang: Lang,
+    @Auth() auth: AuthDto,
+  ): Promise<DictModel> {
+    const user = await this.authService.getUserProfile(auth.userId);
+    const data = await this.dictService.getDictsByWord(
+      word,
+      user.sourceLang,
+      lang,
+    );
+    if (data == null) {
+      throw new NotFoundException('未找到单词');
+    }
+    return data;
   }
 
   /**
-   * 给这个词典里的单词打差评
-   * @param word
-   * @returns
+   * 获取单词的发音
    */
-  @Post(':word/bad-feedback')
-  async bad(
+  @Get(':word/pronunciation')
+  async getPronunciation(
     @Param('word', new RequiredParamPipe()) word: string,
-    @Body() body: { dict: DictType },
+    @Query('slow', ParseBoolPipe) slow: boolean = false,
+    @Query('lang', new RequiredParamPipe()) lang: Lang,
+    @Res() res: Response,
   ) {
-    return this.dictService.badDict(body.dict, word);
+    const buffer = await this.dictPronunciationService.loadRandomSpeaker(
+      word,
+      lang,
+      slow,
+    );
+    if (!buffer) {
+      return null;
+    }
+
+    // 设置响应头
+    res.set({
+      'Content-Type': 'audio/ogg', // 或 audio/opus / audio/webm 看你的编码格式
+      'Content-Disposition': `inline; filename="dict-voice-${dayjs().unix()}.opus"`,
+      'Content-Length': buffer.length,
+    });
+
+    // Buffer 输出音频 (不再使用 stream.pipe)
+    return res.end(buffer);
   }
 }

@@ -1,29 +1,35 @@
-import { Lang } from 'src/enum/lang.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity } from 'typeorm';
+import { BaseEntity } from './base.model';
 
 @Entity()
-export class Sentence {
-  @PrimaryGeneratedColumn()
-  id!: number;
+export class Sentence extends BaseEntity {
+  @Column({
+    type: 'varchar',
+    length: 60,
+    charset: 'utf8mb4',
+    collation: 'utf8mb4_0900_ai_ci',
+  })
+  en!: string;
 
-  @Column()
-  source!: string;
+  @Column({
+    type: 'varchar',
+    length: 60,
+    charset: 'utf8mb4',
+    collation: 'utf8mb4_0900_ai_ci',
+    name: 'zh_cn',
+    nullable: true,
+  })
+  zhCn?: string;
 
-  @Column({ name: 'source_lang', type: 'enum', enum: Lang })
-  sourceLang!: Lang;
-
-  @Column()
-  target!: string;
-
-  @Column({ name: 'target_lang', type: 'enum', enum: Lang })
-  targetLang!: Lang;
+  @Column({
+    type: 'varchar',
+    length: 60,
+    charset: 'utf8mb4',
+    collation: 'utf8mb4_0900_ai_ci',
+    nullable: true,
+  })
+  ja?: string;
 
   @Column({ type: 'enum', enum: WordsLevel })
   level!: WordsLevel;
@@ -34,9 +40,8 @@ export class Sentence {
   @Column({ name: 'bad_score' })
   badScore!: number;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt!: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt!: Date;
+  constructor(partial: Partial<Sentence>) {
+    super();
+    Object.assign(this, partial);
+  }
 }

@@ -23,7 +23,7 @@ export class MyWordService {
     private userRepository: Repository<User>,
   ) {}
 
-  async getWordBookSummary(userId: number): Promise<MyWordSummaryDto> {
+  async getWordBookSummary(userId: string): Promise<MyWordSummaryDto> {
     const user = await this.userRepository.findOneByOrFail({ id: userId });
 
     const totalCount = await this.wordBookRepository.countBy({
@@ -76,7 +76,7 @@ export class MyWordService {
    * @param userId
    * @returns
    */
-  async getWordBookNow(userId: number): Promise<number> {
+  async getWordBookNow(userId: string): Promise<number> {
     return await this.wordBookRepository.countBy({
       userId,
       nextRememberedAt: LessThanOrEqual(dayjs().toDate()),
@@ -90,7 +90,7 @@ export class MyWordService {
    * @returns
    */
   async getWordBooks(
-    userId: number,
+    userId: string,
     limit: number,
     offset: number,
   ): Promise<WordBook[]> {
@@ -108,7 +108,7 @@ export class MyWordService {
   }
 
   async remember(
-    userId: number,
+    userId: string,
     word: string,
     hintCount: number,
     thinkingTime: number,
@@ -137,7 +137,7 @@ export class MyWordService {
     await this.wordBookRepository.save(newModel);
   }
 
-  async badWordBook(userId: number, word: string) {
+  async badWordBook(userId: string, word: string) {
     await this.wordBookRepository.increment(
       {
         userId,
@@ -148,21 +148,21 @@ export class MyWordService {
     );
   }
 
-  async delete(userId: number, word: string) {
+  async delete(userId: string, word: string) {
     return this.wordBookRepository.delete({
       userId,
       word,
     });
   }
 
-  async exist(userId: number, word: string) {
+  async exist(userId: string, word: string) {
     return this.wordBookRepository.existsBy({
       userId,
       word,
     });
   }
 
-  async add(userId: number, word: string, wordLang: Lang, from: string) {
+  async add(userId: string, word: string, wordLang: Lang, from: string) {
     const user = await this.authService.getUserProfile(userId);
     if (!user) {
       return false;

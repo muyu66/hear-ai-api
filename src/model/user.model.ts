@@ -1,18 +1,11 @@
+import { Lang } from 'src/enum/lang.enum';
 import { RememberMethod } from 'src/enum/remember-method.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity } from 'typeorm';
+import { BaseEntity } from './base.model';
 
 @Entity()
-export class User {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
+export class User extends BaseEntity {
   @Column()
   account!: string;
 
@@ -63,53 +56,20 @@ export class User {
   @Column({ name: 'active_level' })
   activeLevel!: number;
 
+  @Column({ name: 'source_lang', enum: Lang })
+  sourceLang!: Lang;
+
+  @Column({ name: 'target_langs', enum: Lang, type: 'simple-json' })
+  targetLangs!: Lang[];
+
   @Column({ name: 'wechat_openid', nullable: true })
   wechatOpenid?: string;
 
   @Column({ name: 'wechat_unionid', nullable: true })
   wechatUnionid?: string;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt!: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt!: Date;
-
-  constructor(params?: {
-    account: string;
-    publicKey: string;
-    publicKeyExpiredAt: Date;
-    nickname: string;
-    rememberMethod: RememberMethod;
-    wordsLevel: WordsLevel;
-    useMinute: number;
-    multiSpeaker: boolean;
-    sayRatio: number;
-    targetRetention: number;
-    reverseWordBookRatio: number;
-    activeLevel: number;
-    wechatOpenid?: string;
-    wechatUnionid?: string;
-    deviceInfo?: string;
-    avatar?: string;
-  }) {
-    if (params) {
-      this.account = params.account;
-      this.publicKey = params.publicKey;
-      this.publicKeyExpiredAt = params.publicKeyExpiredAt;
-      this.nickname = params.nickname;
-      this.avatar = params.avatar;
-      this.rememberMethod = params.rememberMethod;
-      this.wordsLevel = params.wordsLevel;
-      this.useMinute = params.useMinute;
-      this.multiSpeaker = params.multiSpeaker;
-      this.sayRatio = params.sayRatio;
-      this.targetRetention = params.targetRetention;
-      this.reverseWordBookRatio = params.reverseWordBookRatio;
-      this.activeLevel = params.activeLevel;
-      this.wechatOpenid = params.wechatOpenid;
-      this.wechatUnionid = params.wechatUnionid;
-      this.deviceInfo = params.deviceInfo;
-    }
+  constructor(partial: Partial<User>) {
+    super();
+    Object.assign(this, partial);
   }
 }
