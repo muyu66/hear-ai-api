@@ -94,7 +94,7 @@ export class AuthService {
         reverseWordBookRatio: body.reverseWordBookRatio,
         targetRetention: body.targetRetention,
         sourceLang: body.sourceLang,
-        targetLangs: body.targetLangs,
+        targetLang: body.targetLang,
       },
     );
   }
@@ -115,7 +115,7 @@ export class AuthService {
     wechatOpenid?: string;
     wechatUnionid?: string;
     sourceLang: Lang;
-    targetLangs: Lang[];
+    targetLang: Lang;
     level: WordsLevel;
   }) {
     // 生成随机头像
@@ -140,7 +140,7 @@ export class AuthService {
         targetRetention: 90,
         activeLevel: 50,
         sourceLang: data.sourceLang,
-        targetLangs: data.targetLangs,
+        targetLang: data.targetLang,
         wechatOpenid: data.wechatOpenid,
         wechatUnionid: data.wechatUnionid,
       }),
@@ -164,7 +164,7 @@ export class AuthService {
         publicKeyBase64,
         deviceInfo,
         sourceLang: Lang.ZH_CN,
-        targetLangs: [Lang.EN],
+        targetLang: Lang.EN,
         level: WordsLevel.EASY,
       });
     }
@@ -233,7 +233,7 @@ export class AuthService {
         publicKeyBase64,
         deviceInfo,
         sourceLang: Lang.ZH_CN,
-        targetLangs: [Lang.EN],
+        targetLang: Lang.EN,
         level: WordsLevel.EASY,
         wechatOpenid: openid,
         wechatUnionid: undefined,

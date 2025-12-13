@@ -1,13 +1,4 @@
-import {
-  ArrayMinSize,
-  IsArray,
-  IsEnum,
-  IsOptional,
-  Length,
-  Matches,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsOptional, Length, Matches, Max, Min } from 'class-validator';
 import { ClientType } from 'src/constant/contant';
 import { Lang } from 'src/enum/lang.enum';
 import { RememberMethod } from 'src/enum/remember-method.enum';
@@ -30,7 +21,7 @@ export class AuthProfileDto {
   reverseWordBookRatio?: number;
   targetRetention!: number;
   sourceLang!: Lang;
-  targetLangs!: Lang[];
+  targetLang!: Lang;
 }
 
 export class AuthProfileUpdateDto {
@@ -63,10 +54,8 @@ export class AuthProfileUpdateDto {
   @IsEnum(Lang)
   sourceLang?: Lang;
   @IsOptional()
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsEnum(Lang, { each: true })
-  targetLangs?: Lang[];
+  @IsEnum(Lang)
+  targetLang?: Lang;
 }
 
 export class RegisterDto {

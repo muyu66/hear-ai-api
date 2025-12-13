@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import _, { range, sampleSize, shuffle } from 'lodash';
+import { range, sampleSize, shuffle } from 'lodash';
 import { SentenceDto } from 'src/dto/sentence.dto';
 import { Lang } from 'src/enum/lang.enum';
 import { SentenceHistory } from 'src/model/sentence-history.model';
@@ -27,7 +27,23 @@ export class SentenceService {
     private readonly tokenizer: Tokenizer,
   ) {}
 
-  async getSentences(user: User): Promise<Sentence[]> {
+  async getVersion(): Promise<
+    {
+      lang: Lang;
+      updatedAt: string;
+      totalCount: string;
+    }[]
+  > {
+    return this.sentenceRepository
+      .createQueryBuilder('sentence')
+      .select('sentence.lang', 'lang')
+      .addSelect('MAX(sentence.updatedAt)', 'updatedAt')
+      .addSelect('COUNT(*)', 'totalCount')
+      .groupBy('sentence.lang')
+      .getRawMany();
+  }
+
+  async getSentences(user: User, lang: Lang): Promise<Sentence[]> {
     // 生成randomMod范围内的randomCount个数字组成一个数组
     const randomMod = 100;
     const randomCount = 20;
@@ -40,6 +56,7 @@ export class SentenceService {
       .andWhere('level = :wordsLevel', {
         wordsLevel: user.wordsLevel,
       })
+      .andWhere('lang = :lang', { lang })
       .limit(20)
       .orderBy('bad_score', 'ASC')
       .getMany();
@@ -47,20 +64,14 @@ export class SentenceService {
     return shuffle(models);
   }
 
-  toSentenceDto(
-    model: Sentence,
-    sourceLang: Lang,
-    targetLangs: Lang[],
-    user: User,
-  ): SentenceDto {
-    const lang = _.sample(targetLangs)!;
-    const langKey = this.langMap[lang];
+  toSentenceDto(model: Sentence, sourceLang: Lang, user: User): SentenceDto {
+    const langKey = this.langMap[model.lang];
     const sentence = (model[langKey] as string) ?? '';
-    const words = this.tokenizer.tokenize(sentence, lang);
+    const words = this.tokenizer.tokenize(sentence, model.lang);
     return {
       id: model.id,
       words,
-      wordsLang: lang,
+      wordsLang: model.lang,
       translation: (model[this.langMap[sourceLang]] as string) ?? '',
       type: randomAB('listen', 'say', user.sayRatio),
     };

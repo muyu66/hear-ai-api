@@ -19,15 +19,6 @@ import { SentencePronunciationService } from './sentence-pronunciation.service';
 @Injectable()
 export class AddService {
   private readonly logger = new Logger(AddService.name);
-  private readonly FILE_PATH_ADD_DICT_EN = './last-id-add-dict-en.txt';
-  private readonly FILE_PATH_ADD_DICT_ZH_CN = './last-id-add-dict-zh-cn.txt';
-  private readonly FILE_PATH_ADD_DICT_JA = './last-id-add-dict-ja.txt';
-
-  private readonly langMap: Record<Lang, keyof Sentence> = {
-    [Lang.EN]: 'en',
-    [Lang.ZH_CN]: 'zhCn',
-    [Lang.JA]: 'ja',
-  };
 
   constructor(
     @InjectRepository(Sentence)
@@ -57,41 +48,48 @@ export class AddService {
     let i = 1;
     while (true) {
       try {
-        this.logger.debug(`开始添加句子 第${i}轮 ...`);
-
-        const raw = await this.aiRequest.requestWords(40, level);
-        this.logger.debug(`AI返回原文数据 第${i}轮 ... ${raw}`);
-
-        const sentences = <{ en: string; zhCn: string; ja: string }[]>(
-          JSON.parse(raw)
-        );
-        const models = sentences.map((dto) => {
-          return new Sentence({
-            en: dto.en,
-            zhCn: dto.zhCn,
-            ja: dto.ja,
-            badScore: 0,
-            md5: md5(dto.en),
-            level: level,
+        for (const lang of [Lang.EN, Lang.JA]) {
+          this.logger.debug(`开始添加句子 第${i}轮 lang=${lang} ...`);
+          const raw = await this.aiRequest.requestWords(40, level, lang);
+          this.logger.debug(`AI返回原文数据 第${i}轮 lang=${lang} ... ${raw}`);
+          const sentences = <{ en: string; zhCn: string; ja: string }[]>(
+            JSON.parse(raw)
+          );
+          const models = sentences.map((dto) => {
+            const words = lang === Lang.EN ? dto.en : dto.ja;
+            return new Sentence({
+              words,
+              lang,
+              en: dto.en,
+              zhCn: dto.zhCn,
+              ja: dto.ja,
+              badScore: 0,
+              md5: md5(words),
+              level: level,
+            });
           });
-        });
-        this.logger.debug(`AI返回数据 第${i}轮 count=${models.length} ...`);
+          this.logger.debug(
+            `AI返回数据 第${i}轮 lang=${lang} count=${models.length} ...`,
+          );
 
-        // 过滤并去重
-        const uniqModels = _.uniqBy(models, 'md5');
-        const existSentences = await this.sentenceRepository.find({
-          where: { md5: In(uniqModels.map((v) => v.md5)) },
-          select: ['md5'],
-        });
-        const existMd5Set = new Set(existSentences.map((w) => w.md5));
-        const taskModels = Array.from(new Set(uniqModels)).filter(
-          (w) => !existMd5Set.has(w.md5),
-        );
-        this.logger.debug(`去重后 第${i}轮 count=${taskModels.length} ...`);
+          // 过滤并去重
+          const uniqModels = _.uniqBy(models, 'md5');
+          const existSentences = await this.sentenceRepository.find({
+            where: { md5: In(uniqModels.map((v) => v.md5)) },
+            select: ['md5'],
+          });
+          const existMd5Set = new Set(existSentences.map((w) => w.md5));
+          const taskModels = Array.from(new Set(uniqModels)).filter(
+            (w) => !existMd5Set.has(w.md5),
+          );
+          this.logger.debug(
+            `去重后 第${i}轮 lang=${lang} count=${taskModels.length} ...`,
+          );
 
-        await this.sentenceRepository.save(taskModels);
-        this.logger.debug(`保存成功 第${i}轮 ...`);
-        i++;
+          await this.sentenceRepository.save(taskModels);
+          this.logger.debug(`保存成功 第${i}轮 lang=${lang} ...`);
+          i++;
+        }
       } catch (e) {
         this.logger.error(`添加句子 第${i}轮 异常`);
         this.logger.error(e);
@@ -111,132 +109,117 @@ export class AddService {
         .orderBy('w.id', 'ASC')
         .getOneOrFail();
 
-      for (const lang in SPEAKER) {
-        const speakers = SPEAKER[lang as Lang];
-        for (const speaker of speakers) {
-          for (const slow of [false, true]) {
-            const sentence = sentenceModel[
-              this.langMap[lang as Lang]
-            ] as string;
-            const exist = await this.sentencePronunciationService.exist(
-              sentenceModel.id,
-              lang as Lang,
-              speaker.name,
-              slow,
-            );
-            if (exist) {
-              this.logger.debug(
-                `音频已存在，跳过 Speaker=${speaker.name} lang=${lang} sentenceId=${sentenceModel.id} sentence=${sentence} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
-              );
-              continue;
-            }
+      const speakers = SPEAKER[sentenceModel.lang];
+      for (const speaker of speakers) {
+        for (const slow of [false, true]) {
+          const sentence = sentenceModel.words;
+          const lang = sentenceModel.lang;
+          const exist = await this.sentencePronunciationService.exist(
+            sentenceModel.id,
+            lang,
+            speaker.name,
+            slow,
+          );
+          if (exist) {
             this.logger.debug(
-              `正在获取 Speaker=${speaker.name} lang=${lang} sentenceId=${sentenceModel.id} sentence=${sentence} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
+              `音频已存在，跳过 Speaker=${speaker.name} lang=${lang} sentenceId=${sentenceModel.id} sentence=${sentence} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
             );
-            const wavVoice = await this.voiceAliRequest.request(
-              sentence,
-              speaker.id,
-              slow,
-            );
-
-            this.logger.debug(
-              `正在Opus转码 Speaker=${speaker.name} lang=${lang} sentenceId=${sentenceModel.id} sentence=${sentence} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
-            );
-            const opusVoice = await formatBufferWavToOpus(wavVoice);
-
-            await this.sentencePronunciationService.save(
-              sentenceModel.id,
-              lang as Lang,
-              speaker.name,
-              opusVoice,
-              slow,
-            );
-            this.logger.debug(
-              `上传音频成功 Speaker=${speaker.name} lang=${lang} sentenceId=${sentenceModel.id} sentence=${sentence} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
-            );
+            continue;
           }
+          this.logger.debug(
+            `正在获取 Speaker=${speaker.name} lang=${lang} sentenceId=${sentenceModel.id} sentence=${sentence} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
+          );
+          const wavVoice = await this.voiceAliRequest.request(
+            sentence,
+            speaker.id,
+            slow,
+          );
+
+          this.logger.debug(
+            `正在Opus转码 Speaker=${speaker.name} lang=${lang} sentenceId=${sentenceModel.id} sentence=${sentence} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
+          );
+          const opusVoice = await formatBufferWavToOpus(wavVoice);
+
+          await this.sentencePronunciationService.save(
+            sentenceModel.id,
+            lang,
+            speaker.name,
+            opusVoice,
+            slow,
+          );
+          this.logger.debug(
+            `上传音频成功 Speaker=${speaker.name} lang=${lang} sentenceId=${sentenceModel.id} sentence=${sentence} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
+          );
         }
       }
       offset++;
     }
   }
 
-  async addAiDictByLang(lang: Lang, limit = 10) {
-    const filePath =
-      lang === Lang.EN
-        ? this.FILE_PATH_ADD_DICT_EN
-        : lang === Lang.ZH_CN
-          ? this.FILE_PATH_ADD_DICT_ZH_CN
-          : this.FILE_PATH_ADD_DICT_JA;
-
-    let lastId = await this.getLastProcessedId(filePath);
+  async addAiDict() {
+    let offset = 0;
 
     while (true) {
-      this.logger.debug(`准备获取词典 lastId=${lastId} ...`);
+      this.logger.debug(`准备获取词典 offset=${offset} ...`);
       const sentenceModels = await this.sentenceRepository
         .createQueryBuilder('w')
-        .where('w.id > :lastId', { lastId })
-        .limit(limit)
+        .limit(20)
+        .offset(offset)
         .orderBy('w.id', 'ASC')
         .getMany();
 
       if (sentenceModels.length === 0) {
-        this.logger.debug(
-          `已经完成所有任务 sentenceModelsCount=${sentenceModels.length} lastId=${lastId} ...`,
-        );
+        this.logger.debug(`没有更多数据了...`);
         break;
       }
 
-      this.logger.debug(
-        `准备分词 sentenceModelsCount=${sentenceModels.length} lastId=${lastId} ...`,
-      );
+      this.logger.debug(`准备分词 offset=${offset} ...`);
+
+      const en = sentenceModels
+        .map((sentenceModel) => sentenceModel.en)
+        .join(' ');
+      const ja = sentenceModels
+        .map((sentenceModel) => sentenceModel.ja)
+        .join(' ');
 
       // 根据语言选择分词器
-      const words: string[] = this.tokenizer.tokenizeSentences(
-        sentenceModels,
-        lang,
-      );
+      const enWords: string[] = this.tokenizer.tokenize(en, Lang.EN);
+      const jaWords: string[] =
+        ja.length === 0 ? [] : this.tokenizer.tokenize(ja, Lang.JA);
 
-      // 查询已存在的词
-      const existWords = await this.aiDictRepository.find({
-        where:
-          lang === Lang.EN
-            ? { en: In(words) }
-            : lang === Lang.ZH_CN
-              ? { zhCn: In(words) }
-              : { ja: In(words) },
-        select: [lang === Lang.EN ? 'en' : lang === Lang.ZH_CN ? 'zhCn' : 'ja'],
-      });
+      for (const { words, lang } of [
+        { words: enWords, lang: Lang.EN },
+        { words: jaWords, lang: Lang.JA },
+      ]) {
+        // 查询已存在的词
+        const existWords = await this.aiDictRepository.find({
+          where: { word: In(words), lang },
+        });
+        const existSet = new Set(existWords.map((w) => w.word));
+        // 过滤并去重
+        const taskWords = Array.from(new Set(words)).filter(
+          (w) => !existSet.has(w),
+        );
+        this.logger.debug(
+          `准备获取${lang}单词 单词数=${words.length} 去重后单词数=${taskWords.length} offset=${offset} ...`,
+        );
 
-      const existSet = new Set(
-        existWords.map((w) =>
-          lang === Lang.EN ? w.en : lang === Lang.ZH_CN ? w.zhCn : w.ja,
-        ),
-      );
+        if (taskWords.length <= 0) {
+          this.logger.debug(
+            `跳过，没有需要获取的${lang}单词 单词数=${words.length} 去重后单词数=${taskWords.length} offset=${offset} ...`,
+          );
+          continue;
+        }
 
-      // 过滤并去重
-      const taskWords = Array.from(new Set(words)).filter(
-        (w) => !existSet.has(w),
-      );
-
-      this.logger.debug(
-        `准备获取单词 taskWordsCount=${taskWords.length} lastId=${lastId} ...`,
-      );
-
-      if (taskWords.length > 0) {
-        const raws = await this.aiRequest.requestDict(taskWords);
+        const raws = await this.aiRequest.requestDict(taskWords, lang);
         this.logger.debug(raws);
 
         const objects = <
           {
-            en: string;
-            enPhonetic: string;
+            word: string;
+            phonetic: string[];
             enTranslation: string;
-            zhCn: string;
-            zhCnPhonetic: string;
             zhCnTranslation: string;
-            ja: string;
-            jaPhonetic: string;
             jaTranslation: string;
           }[]
         >JSON.parse(
@@ -248,28 +231,20 @@ export class AddService {
 
         const models = objects.map((object) => {
           return new AiDict({
-            en: object.en.toLowerCase(),
-            enPhonetic: object.enPhonetic,
+            word: object.word.toLowerCase(),
+            lang,
+            phonetic: object.phonetic,
             enTranslation: object.enTranslation,
-            zhCn: object.zhCn,
-            zhCnPhonetic: object.zhCnPhonetic,
             zhCnTranslation: object.zhCnTranslation,
-            ja: object.ja,
-            jaPhonetic: object.jaPhonetic,
             jaTranslation: object.jaTranslation,
           });
         });
 
         await this.aiDictRepository.insert(models);
-        this.logger.debug(
-          `已成功保存 taskWordsCount=${taskWords.length} lastId=${lastId} ...`,
-        );
+        this.logger.debug(`已保存成功${lang}单词 offset=${offset} ...`);
       }
 
-      const maxId = _.maxBy(sentenceModels, 'id')?.id;
-      lastId = maxId!;
-      this.logger.debug(`本轮最大ID maxId=${lastId} ...`);
-      await this.saveLastProcessedId(filePath, lastId);
+      offset += sentenceModels.length;
     }
   }
 
@@ -285,57 +260,54 @@ export class AddService {
         .orderBy('w.id', 'ASC')
         .getOneOrFail();
 
-      for (const lang in SPEAKER) {
-        const speakers = SPEAKER[lang as Lang];
-        for (const speaker of speakers) {
-          for (const slow of [false, true]) {
-            const word = dictModel[this.langMap[lang as Lang]] as
-              | string
-              | undefined;
-            if (word == undefined || word.length === 0) {
-              this.logger.debug(
-                `无法识别内容，跳过 Speaker=${speaker.name} lang=${lang} dictModelId=${dictModel.id} word=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
-              );
-              continue;
-            }
-            const exist = await this.dictPronunciationService.exist(
-              word,
-              lang as Lang,
-              speaker.name,
-              slow,
-            );
-            if (exist) {
-              this.logger.debug(
-                `音频已存在，跳过 Speaker=${speaker.name} lang=${lang} dictModelId=${dictModel.id} word=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
-              );
-              continue;
-            }
+      const speakers = SPEAKER[dictModel.lang];
+      for (const speaker of speakers) {
+        for (const slow of [false, true]) {
+          const word = dictModel.word;
+          const lang = dictModel.lang;
+          if (word == undefined || word.length === 0) {
             this.logger.debug(
-              `正在获取 Speaker=${speaker.name} lang=${lang} dictModelId=${dictModel.id} word=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
+              `无法识别内容，跳过 Speaker=${speaker.name} lang=${lang} dictModelId=${dictModel.id} word=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
             );
-            const wavVoice = await this.voiceAliRequest.request(
-              word,
-              speaker.id,
-              slow,
-            );
-
-            this.logger.debug(
-              `正在Opus转码 Speaker=${speaker.name} lang=${lang} dictModelId=${dictModel.id} word=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
-            );
-            const opusVoice = await formatBufferWavToOpus(wavVoice);
-
-            await this.dictPronunciationService.save(
-              word,
-              dictModel.id,
-              lang as Lang,
-              speaker.name,
-              opusVoice,
-              slow,
-            );
-            this.logger.debug(
-              `上传音频成功 Speaker=${speaker.name} lang=${lang} sentenceId=${dictModel.id} sentence=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
-            );
+            continue;
           }
+          const exist = await this.dictPronunciationService.exist(
+            word,
+            lang,
+            speaker.name,
+            slow,
+          );
+          if (exist) {
+            this.logger.debug(
+              `音频已存在，跳过 Speaker=${speaker.name} lang=${lang} dictModelId=${dictModel.id} word=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
+            );
+            continue;
+          }
+          this.logger.debug(
+            `正在获取 Speaker=${speaker.name} lang=${lang} dictModelId=${dictModel.id} word=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
+          );
+          const wavVoice = await this.voiceAliRequest.request(
+            word,
+            speaker.id,
+            slow,
+          );
+
+          this.logger.debug(
+            `正在Opus转码 Speaker=${speaker.name} lang=${lang} dictModelId=${dictModel.id} word=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
+          );
+          const opusVoice = await formatBufferWavToOpus(wavVoice);
+
+          await this.dictPronunciationService.save(
+            word,
+            dictModel.id,
+            lang,
+            speaker.name,
+            opusVoice,
+            slow,
+          );
+          this.logger.debug(
+            `上传音频成功 Speaker=${speaker.name} lang=${lang} sentenceId=${dictModel.id} sentence=${word} Offset=${offset} ${slow ? '慢速' : '正常'}音频...`,
+          );
         }
       }
       offset++;

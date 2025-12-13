@@ -1,6 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
 import { Public } from 'src/decorator/public.decorator';
-import { Lang } from 'src/enum/lang.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
 import { AddService } from 'src/service/add.service';
 import { ConfigService } from 'src/service/config.service';
@@ -18,7 +17,7 @@ export class AddController {
     if (this.configService.env !== 'development') {
       return;
     }
-    return this.addService.addSentences(WordsLevel.VERY_EASY);
+    return this.addService.addSentences(WordsLevel.NORMAL);
   }
 
   @Get('voices')
@@ -34,15 +33,7 @@ export class AddController {
     if (this.configService.env !== 'development') {
       return;
     }
-    return this.addService.addAiDictByLang(Lang.EN);
-  }
-
-  @Get('ai-dicts-ja')
-  async addAiDictJa() {
-    if (this.configService.env !== 'development') {
-      return;
-    }
-    return this.addService.addAiDictByLang(Lang.JA);
+    return this.addService.addAiDict();
   }
 
   @Get('dict-voices')

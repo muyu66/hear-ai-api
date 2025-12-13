@@ -83,9 +83,6 @@ export class DictController {
       slow,
     );
     const buffer = pronunciation?.pronunciation;
-    this.logger.debug(
-      `getWordPronunciation pronunciationId=${pronunciation?.id} bufferLen:${buffer?.length ?? 0} speaker=${pronunciation?.speaker} word=${word} slow=${slow} lang=${lang}`,
-    );
     if (!buffer) {
       throw new NotFoundException('未找到单词');
     }

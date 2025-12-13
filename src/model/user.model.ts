@@ -59,8 +59,8 @@ export class User extends BaseEntity {
   @Column({ name: 'source_lang', enum: Lang })
   sourceLang!: Lang;
 
-  @Column({ name: 'target_langs', enum: Lang, type: 'simple-json' })
-  targetLangs!: Lang[];
+  @Column({ name: 'target_lang', enum: Lang })
+  targetLang!: Lang;
 
   @Column({ name: 'wechat_openid', nullable: true })
   wechatOpenid?: string;

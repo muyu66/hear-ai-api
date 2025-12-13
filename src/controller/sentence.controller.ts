@@ -32,17 +32,26 @@ export class SentenceController {
     private readonly sentencePronunciationService: SentencePronunciationService,
   ) {}
 
+  @Get('version')
+  async getVersion(): Promise<
+    {
+      lang: Lang;
+      updatedAt: string;
+      totalCount: string;
+    }[]
+  > {
+    return this.sentenceService.getVersion();
+  }
+
   @Get()
   async getSentences(@Auth() auth: AuthDto): Promise<SentenceDto[]> {
     const user = await this.authService.getUserProfile(auth.userId);
-    const sentences = await this.sentenceService.getSentences(user);
+    const sentences = await this.sentenceService.getSentences(
+      user,
+      user.targetLang,
+    );
     return sentences.map((item) => {
-      return this.sentenceService.toSentenceDto(
-        item,
-        user.sourceLang,
-        user.targetLangs,
-        user,
-      );
+      return this.sentenceService.toSentenceDto(item, user.sourceLang, user);
     });
   }
 
@@ -78,9 +87,6 @@ export class SentenceController {
         lang,
         slow,
       );
-    this.logger.debug(
-      `getPronunciation pronunciationId=${pronunciation?.id} speaker=${pronunciation?.speaker} sentenceId=${sentenceId} slow=${slow} lang=${lang}`,
-    );
     const buffer = pronunciation?.pronunciation;
     if (buffer == null) {
       return null;

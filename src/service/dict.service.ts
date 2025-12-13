@@ -8,18 +8,6 @@ import { FindOptionsWhere, In, Repository } from 'typeorm';
 @Injectable()
 export class DictService {
   private readonly logger = new Logger(DictService.name);
-  private readonly wordMap: Record<Lang, keyof AiDict> = {
-    [Lang.EN]: 'en',
-    [Lang.ZH_CN]: 'zhCn',
-    [Lang.JA]: 'ja',
-  };
-
-  private readonly phoneticMap: Record<Lang, keyof AiDict> = {
-    [Lang.EN]: 'enPhonetic',
-    [Lang.ZH_CN]: 'zhCnPhonetic',
-    [Lang.JA]: 'jaPhonetic',
-  };
-
   private readonly translationMap: Record<Lang, keyof AiDict> = {
     [Lang.EN]: 'enTranslation',
     [Lang.ZH_CN]: 'zhCnTranslation',
@@ -32,17 +20,7 @@ export class DictService {
   ) {}
 
   /** 将实体转换为 DictModel */
-  private toDictModel(
-    model: AiDict,
-    sourceLang: Lang,
-    targetLang: Lang,
-  ): DictModel {
-    // 处理 phonetic 格式
-    const formatPhonetic = (lang: Lang, value: string | undefined) => {
-      if (!value) return '';
-      return lang === Lang.EN ? `/${value.replace(/^\/+|\/+$/g, '')}/` : value;
-    };
-
+  private toDictModel(model: AiDict, sourceLang: Lang): DictModel {
     // 处理翻译格式
     const formatTranslation = (lang: Lang, value: string | undefined) => {
       if (!value) return '';
@@ -57,11 +35,8 @@ export class DictService {
 
     const dictModel: DictModel = {
       id: model.id,
-      word: (model[this.wordMap[targetLang]] as string) || '',
-      phonetic: formatPhonetic(
-        targetLang,
-        model[this.phoneticMap[targetLang]] as string,
-      ),
+      word: model.word,
+      phonetic: model.phonetic,
       translation: formatTranslation(
         sourceLang,
         model[this.translationMap[sourceLang]] as string,
@@ -72,35 +47,33 @@ export class DictService {
     return dictModel;
   }
 
-  /** 获取多个词典的单词 */
+  /** 获取单词 */
   async getDictsByWord(
     word: string,
     sourceLang: Lang,
     targetLang: Lang,
   ): Promise<DictModel | null> {
-    const key = this.wordMap[targetLang] || 'zhCn';
-    const model = await this.aiDictRepository.findOneBy({ [key]: word });
-    return model == null
-      ? null
-      : this.toDictModel(model, sourceLang, targetLang);
+    const model = await this.aiDictRepository.findOneBy({
+      word,
+      lang: targetLang,
+    });
+    return model == null ? null : this.toDictModel(model, sourceLang);
   }
 
   /** 获取多个单词 */
   async getDictsByWords(
-    word: string[],
+    words: string[],
     sourceLang: Lang,
     targetLang: Lang,
   ): Promise<DictModel[]> {
-    if (word == null || word.length === 0) return [];
+    if (words == null || words.length === 0) return [];
 
-    const key = this.wordMap[targetLang] || 'zhCn';
     const where: FindOptionsWhere<AiDict> = {
-      [key]: In(word),
+      word: In(words),
+      lang: targetLang,
     };
     const models = await this.aiDictRepository.findBy(where);
-    return models.map((model) =>
-      this.toDictModel(model, sourceLang, targetLang),
-    );
+    return models.map((model) => this.toDictModel(model, sourceLang));
   }
 
   /** 增加单词的 badScore */

@@ -3,7 +3,7 @@ import { Lang } from 'src/enum/lang.enum';
 export class MyWordDto {
   word!: string;
   wordLang!: Lang;
-  phonetic?: string;
+  phonetic?: string[];
   translation?: string;
   type!: 'source' | 'target';
 }

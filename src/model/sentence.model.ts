@@ -1,16 +1,24 @@
 import { WordsLevel } from 'src/enum/words-level.enum';
 import { Column, Entity } from 'typeorm';
 import { BaseEntity } from './base.model';
+import { Lang } from 'src/enum/lang.enum';
 
 @Entity()
 export class Sentence extends BaseEntity {
+  @Column()
+  words!: string;
+
+  @Column()
+  lang!: Lang;
+
   @Column({
     type: 'varchar',
     length: 60,
     charset: 'utf8mb4',
     collation: 'utf8mb4_0900_ai_ci',
+    nullable: true,
   })
-  en!: string;
+  en?: string;
 
   @Column({
     type: 'varchar',

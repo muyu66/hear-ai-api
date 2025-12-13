@@ -46,7 +46,7 @@ export class AuthController {
       reverseWordBookRatio: user.reverseWordBookRatio,
       targetRetention: user.targetRetention,
       sourceLang: user.sourceLang,
-      targetLangs: user.targetLangs,
+      targetLang: user.targetLang,
     } satisfies AuthProfileDto;
   }
 

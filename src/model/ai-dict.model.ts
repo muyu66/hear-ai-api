@@ -1,64 +1,17 @@
 import { Column, Entity } from 'typeorm';
 import { BaseEntity } from './base.model';
+import { Lang } from 'src/enum/lang.enum';
 
 @Entity('ai_dict')
 export class AiDict extends BaseEntity {
-  @Column({
-    type: 'varchar',
-    length: 60,
-    charset: 'utf8mb4',
-    collation: 'utf8mb4_0900_ai_ci',
-  })
-  en!: string;
+  @Column()
+  word!: string;
 
-  @Column({
-    type: 'varchar',
-    length: 60,
-    charset: 'utf8mb4',
-    collation: 'utf8mb4_0900_ai_ci',
-    name: 'zh_cn',
-    nullable: true,
-  })
-  zhCn?: string;
+  @Column()
+  lang!: Lang;
 
-  @Column({
-    type: 'varchar',
-    length: 60,
-    charset: 'utf8mb4',
-    collation: 'utf8mb4_0900_ai_ci',
-    nullable: true,
-  })
-  ja?: string;
-
-  @Column({
-    type: 'varchar',
-    length: 100,
-    charset: 'utf8mb4',
-    collation: 'utf8mb4_0900_ai_ci',
-    name: 'en_phonetic',
-    nullable: true,
-  })
-  enPhonetic?: string;
-
-  @Column({
-    type: 'varchar',
-    length: 100,
-    charset: 'utf8mb4',
-    collation: 'utf8mb4_0900_ai_ci',
-    name: 'zh_cn_phonetic',
-    nullable: true,
-  })
-  zhCnPhonetic?: string;
-
-  @Column({
-    type: 'varchar',
-    length: 100,
-    charset: 'utf8mb4',
-    collation: 'utf8mb4_0900_ai_ci',
-    name: 'ja_phonetic',
-    nullable: true,
-  })
-  jaPhonetic?: string;
+  @Column({ type: 'simple-json' })
+  phonetic!: string[];
 
   @Column({
     type: 'varchar',
