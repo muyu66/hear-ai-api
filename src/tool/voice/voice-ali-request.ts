@@ -1,34 +1,39 @@
-import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
 import RPCClient from '@alicloud/pop-core';
+import { HttpService } from '@nestjs/axios';
+import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { VoiceRequest } from './voice-request';
 import { ConfigService } from 'src/service/config.service';
+import { VoiceRequest } from './voice-request';
 
 @Injectable()
 export class VoiceAliRequest implements VoiceRequest {
+  private readonly logger = new Logger(VoiceAliRequest.name);
   private token: string = '';
+  private client: RPCClient | null = null;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
     if (this.configService.aliAk && this.configService.aliSk) {
-      const client = new RPCClient({
+      this.client = new RPCClient({
         accessKeyId: this.configService.aliAk || '',
         accessKeySecret: this.configService.aliSk || '',
         endpoint: 'http://nls-meta.cn-shanghai.aliyuncs.com',
         apiVersion: '2019-02-28',
       });
+    }
+  }
 
-      client
-        .request('CreateToken', {})
-        .then((result: { Token: { Id: string; ExpireTime: string } }) => {
-          this.token = result.Token.Id;
-        })
-        .catch((e) => {
-          console.log(e);
-        });
+  async onModuleInit() {
+    if (this.client != null) {
+      try {
+        const result: { Token: { Id: string; ExpireTime: string } } =
+          await this.client.request('CreateToken', {});
+        this.token = result.Token.Id;
+      } catch (error) {
+        this.logger.error(error);
+      }
     }
   }
 

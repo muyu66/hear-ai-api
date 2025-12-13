@@ -3,7 +3,7 @@ import { Lang } from 'src/enum/lang.enum';
 
 export class SentenceDto {
   id!: string;
-  words!: string;
+  words!: string[];
   wordsLang!: Lang;
   translation!: string;
   type!: WordsType;

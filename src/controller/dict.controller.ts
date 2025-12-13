@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Logger,
   NotFoundException,
   Param,
   ParseBoolPipe,
@@ -10,6 +11,7 @@ import {
   Res,
 } from '@nestjs/common';
 import dayjs from 'dayjs';
+import type { Response } from 'express';
 import { Auth } from 'src/decorator/auth.decorator';
 import { ClientAllowed } from 'src/decorator/client-allowed.decorator';
 import { AuthDto } from 'src/dto/auth.dto';
@@ -19,11 +21,12 @@ import { RequiredParamPipe } from 'src/pipe/required-param.pipe';
 import { AuthService } from 'src/service/auth.service';
 import { DictPronunciationService } from 'src/service/dict-pronunciation.service';
 import { DictService } from 'src/service/dict.service';
-import type { Response } from 'express';
 
 @ClientAllowed('android')
 @Controller('dicts')
 export class DictController {
+  private readonly logger = new Logger(DictController.name);
+
   constructor(
     private readonly dictService: DictService,
     private readonly authService: AuthService,
@@ -71,20 +74,25 @@ export class DictController {
     @Param('word', new RequiredParamPipe()) word: string,
     @Query('slow', ParseBoolPipe) slow: boolean = false,
     @Query('lang', new RequiredParamPipe()) lang: Lang,
-    @Res() res: Response,
+    @Res()
+    res: Response,
   ) {
-    const buffer = await this.dictPronunciationService.loadRandomSpeaker(
+    const pronunciation = await this.dictPronunciationService.loadRandomSpeaker(
       word,
       lang,
       slow,
     );
+    const buffer = pronunciation?.pronunciation;
+    this.logger.debug(
+      `getWordPronunciation pronunciationId=${pronunciation?.id} bufferLen:${buffer?.length ?? 0} speaker=${pronunciation?.speaker} word=${word} slow=${slow} lang=${lang}`,
+    );
     if (!buffer) {
-      return null;
+      throw new NotFoundException('未找到单词');
     }
 
     // 设置响应头
     res.set({
-      'Content-Type': 'audio/ogg', // 或 audio/opus / audio/webm 看你的编码格式
+      'Content-Type': 'audio/ogg',
       'Content-Disposition': `inline; filename="dict-voice-${dayjs().unix()}.opus"`,
       'Content-Length': buffer.length,
     });

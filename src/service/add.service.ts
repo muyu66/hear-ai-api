@@ -1,22 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { promises as fs } from 'fs';
-import { tokenize } from 'kuromojin';
 import _ from 'lodash';
-import { WordTokenizer } from 'natural';
-import Segment from 'novel-segment';
 import { Lang } from 'src/enum/lang.enum';
 import { WordsLevel } from 'src/enum/words-level.enum';
 import { AiDict } from 'src/model/ai-dict.model';
 import { Sentence } from 'src/model/sentence.model';
 import { AiRequest } from 'src/tool/ai-request';
+import { Tokenizer } from 'src/tool/tokenizer';
 import { md5 } from 'src/tool/tool';
 import { formatBufferWavToOpus } from 'src/tool/voice/format';
 import { VoiceAliRequest } from 'src/tool/voice/voice-ali-request';
+import { SPEAKER } from 'src/tool/voice/voice-speaker';
 import { In, Repository } from 'typeorm';
 import { DictPronunciationService } from './dict-pronunciation.service';
 import { SentencePronunciationService } from './sentence-pronunciation.service';
-import { SPEAKER } from 'src/tool/voice/voice-speaker';
 
 @Injectable()
 export class AddService {
@@ -30,10 +28,6 @@ export class AddService {
     [Lang.ZH_CN]: 'zhCn',
     [Lang.JA]: 'ja',
   };
-  // 中文分词
-  private readonly segment = new Segment();
-  // 英文分词
-  private readonly tokenizer = new WordTokenizer();
 
   constructor(
     @InjectRepository(Sentence)
@@ -44,10 +38,8 @@ export class AddService {
     private readonly aiRequest: AiRequest,
     private readonly sentencePronunciationService: SentencePronunciationService,
     private readonly dictPronunciationService: DictPronunciationService,
-  ) {
-    // 使用默认的识别模块及字典，载入字典文件需要1秒，仅初始化时执行一次即可
-    this.segment.useDefault();
-  }
+    private readonly tokenizer: Tokenizer,
+  ) {}
 
   async saveLastProcessedId(filePath: string, id: string) {
     await fs.writeFile(filePath, id, 'utf-8');
@@ -200,29 +192,10 @@ export class AddService {
       );
 
       // 根据语言选择分词器
-      let words: string[] = [];
-      if (lang === Lang.EN) {
-        words = this.tokenizer
-          .tokenize(sentenceModels.map((v) => v.en).join(' '))
-          .map((v) => v.toLowerCase());
-      } else if (lang === Lang.ZH_CN) {
-        words = this.segment.doSegment(
-          sentenceModels.map((v) => v.zhCn).join(' '),
-          {
-            simple: true,
-            stripPunctuation: true,
-            convertSynonym: false,
-            stripStopword: false,
-            stripSpace: true,
-          },
-        );
-      } else {
-        // ja
-        const tokenizeWords = await tokenize(
-          sentenceModels.map((v) => v.ja).join(' '),
-        );
-        words.push(...tokenizeWords.map((v) => v.basic_form));
-      }
+      const words: string[] = this.tokenizer.tokenizeSentences(
+        sentenceModels,
+        lang,
+      );
 
       // 查询已存在的词
       const existWords = await this.aiDictRepository.find({

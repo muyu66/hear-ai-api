@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Logger,
   Param,
   ParseBoolPipe,
   Post,
@@ -23,6 +24,8 @@ import { SentenceService } from 'src/service/sentence.service';
 @ClientAllowed('android')
 @Controller('sentences')
 export class SentenceController {
+  private readonly logger = new Logger(SentenceController.name);
+
   constructor(
     private readonly sentenceService: SentenceService,
     private readonly authService: AuthService,
@@ -65,15 +68,20 @@ export class SentenceController {
   @Get(':id/pronunciation')
   async getPronunciation(
     @Param('id', new RequiredParamPipe()) sentenceId: string,
-    @Query('slow', new ParseBoolPipe()) slow: boolean = false,
+    @Query('slow', ParseBoolPipe) slow: boolean = false,
     @Query('lang', new RequiredParamPipe()) lang: Lang,
     @Res() res: Response,
   ) {
-    const buffer = await this.sentencePronunciationService.loadRandomSpeaker(
-      sentenceId,
-      lang,
-      slow,
+    const pronunciation =
+      await this.sentencePronunciationService.loadRandomSpeaker(
+        sentenceId,
+        lang,
+        slow,
+      );
+    this.logger.debug(
+      `getPronunciation pronunciationId=${pronunciation?.id} speaker=${pronunciation?.speaker} sentenceId=${sentenceId} slow=${slow} lang=${lang}`,
     );
+    const buffer = pronunciation?.pronunciation;
     if (buffer == null) {
       return null;
     }

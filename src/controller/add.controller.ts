@@ -18,7 +18,7 @@ export class AddController {
     if (this.configService.env !== 'development') {
       return;
     }
-    return this.addService.addSentences(WordsLevel.EASY);
+    return this.addService.addSentences(WordsLevel.VERY_EASY);
   }
 
   @Get('voices')
@@ -31,6 +31,14 @@ export class AddController {
 
   @Get('ai-dicts')
   async addAiDict() {
+    if (this.configService.env !== 'development') {
+      return;
+    }
+    return this.addService.addAiDictByLang(Lang.EN);
+  }
+
+  @Get('ai-dicts-ja')
+  async addAiDictJa() {
     if (this.configService.env !== 'development') {
       return;
     }

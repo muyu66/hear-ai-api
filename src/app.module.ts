@@ -37,6 +37,7 @@ import { AiRequest } from './tool/ai-request';
 import { AlgorithmModule } from './tool/algorithm/algorithm.module';
 import { VoiceAliRequest } from './tool/voice/voice-ali-request';
 import { VoiceMurfRequest } from './tool/voice/voice-murf-request';
+import { Tokenizer } from './tool/tokenizer';
 
 @Module({
   imports: [
@@ -93,6 +94,7 @@ import { VoiceMurfRequest } from './tool/voice/voice-murf-request';
     SplashController,
   ],
   providers: [
+    Tokenizer,
     DictPronunciationService,
     DictService,
     MyWordService,

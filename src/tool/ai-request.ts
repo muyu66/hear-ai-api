@@ -4,19 +4,7 @@ import { WordsLevel } from 'src/enum/words-level.enum';
 import { ConfigService } from 'src/service/config.service';
 
 const promptDictMaker = (words: string[]) => {
-  return `You are an English-Chinese-Japanese dictionary assistant.
-I will give you a list of words. Each word may be English, Chinese, or Japanese. For each word, provide all three languages in this format:
-English: "en" = word, "enPhonetic" = pronunciation, "enTranslation" = detailed meaning.
-Chinese: "zhCn" = word in Chinese, "zhCnPhonetic" = Pinyin, "zhCnTranslation" = detailed meaning grouped by part of speech, meanings per part separated by commas, lines separated by \n, no repeated labels, no examples or domain-specific meanings.
-Japanese: "ja" = word in Japanese, "jaPhonetic" = Katakana, "jaTranslation" = same rules as Chinese.
-Return exactly a JSON array in this format, no extra text:
-[{"en": "example1", "enPhonetic": "phonetic1", "enTranslation": "translation1",
-"zhCn": "example1", "zhCnPhonetic": "phonetic1", "zhCnTranslation": "translation1",
-"ja": "example1", "jaPhonetic": "phonetic1", "jaTranslation": "translation1"
-},{"en": "example2", "enPhonetic": "phonetic2", "enTranslation": "translation2",
-"zhCn": "example2", "zhCnPhonetic": "phonetic2", "zhCnTranslation": "translation2",
-"ja": "example2", "jaPhonetic": "phonetic2", "jaTranslation": "translation2"}]
-The words are: ${words.join(',')}`;
+  return `You are an English-Chinese-Japanese dictionary assistant. Given a list of words (${words.join(',')}), return a JSON array. For each word, provide: {"en": English word, "enPhonetic": pronunciation, "enTranslation": concise English definition, "zhCn": Chinese word, "zhCnPhonetic": Pinyin, "zhCnTranslation": Chinese meanings grouped by part of speech, merged per POS with commas, lines separated by \n, no repeated POS, no examples or domain notes, "ja": Japanese word, "jaPhonetic": Katakana, "jaTranslation": Japanese meanings same as Chinese rules}. Do not include any text outside the JSON array.`;
 };
 
 const promptWordsMaker = (
@@ -103,6 +91,9 @@ export class AiRequest {
         },
       ],
       model: 'deepseek-chat',
+      response_format: {
+        type: 'json_object',
+      },
     });
 
     return completion.choices[0].message.content || '[]';

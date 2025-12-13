@@ -26,8 +26,8 @@ export class SentencePronunciationService {
     sentenceId: string,
     lang: Lang,
     slow: boolean,
-  ): Promise<Buffer | null> {
-    const model = await this.sentencePronunciationRepository
+  ): Promise<SentencePronunciation | null> {
+    return this.sentencePronunciationRepository
       .createQueryBuilder('p')
       .where('p.sentenceId = :sentenceId', { sentenceId })
       .andWhere('p.lang = :lang', { lang })
@@ -35,8 +35,6 @@ export class SentencePronunciationService {
       .orderBy('RAND()')
       .limit(1)
       .getOne();
-
-    return model?.pronunciation ?? null;
   }
 
   async save(

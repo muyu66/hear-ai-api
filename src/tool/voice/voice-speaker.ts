@@ -3,7 +3,6 @@ import { Lang } from 'src/enum/lang.enum';
 export const SPEAKER: Record<Lang, { name: string; id: string }[]> = {
   [Lang.EN]: [
     { name: 'ali-cally', id: 'cally' },
-    { name: 'ali-eric', id: 'eric' },
     { name: 'ali-emily', id: 'emily' },
     { name: 'ali-eva', id: 'eva' },
   ],

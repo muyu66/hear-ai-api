@@ -26,8 +26,8 @@ export class DictPronunciationService {
     word: string,
     lang: Lang,
     slow: boolean,
-  ): Promise<Buffer | null> {
-    const model = await this.dictPronunciationRepository
+  ): Promise<DictPronunciation | null> {
+    return this.dictPronunciationRepository
       .createQueryBuilder('p')
       .where('p.word = :word', { word })
       .andWhere('p.lang = :lang', { lang })
@@ -35,8 +35,6 @@ export class DictPronunciationService {
       .orderBy('RAND()')
       .limit(1)
       .getOne();
-
-    return model?.pronunciation ?? null;
   }
 
   async save(

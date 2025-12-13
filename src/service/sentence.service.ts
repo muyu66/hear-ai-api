@@ -6,6 +6,7 @@ import { Lang } from 'src/enum/lang.enum';
 import { SentenceHistory } from 'src/model/sentence-history.model';
 import { Sentence } from 'src/model/sentence.model';
 import { User } from 'src/model/user.model';
+import { Tokenizer } from 'src/tool/tokenizer';
 import { randomAB } from 'src/tool/tool';
 import { Repository } from 'typeorm';
 
@@ -23,6 +24,7 @@ export class SentenceService {
     private sentenceRepository: Repository<Sentence>,
     @InjectRepository(SentenceHistory)
     private wordsHistoryRepository: Repository<SentenceHistory>,
+    private readonly tokenizer: Tokenizer,
   ) {}
 
   async getSentences(user: User): Promise<Sentence[]> {
@@ -53,9 +55,11 @@ export class SentenceService {
   ): SentenceDto {
     const lang = _.sample(targetLangs)!;
     const langKey = this.langMap[lang];
+    const sentence = (model[langKey] as string) ?? '';
+    const words = this.tokenizer.tokenize(sentence, lang);
     return {
       id: model.id,
-      words: (model[langKey] as string) ?? '',
+      words,
       wordsLang: lang,
       translation: (model[this.langMap[sourceLang]] as string) ?? '',
       type: randomAB('listen', 'say', user.sayRatio),
