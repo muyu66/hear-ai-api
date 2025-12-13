@@ -72,9 +72,9 @@ export class MyWordController {
       const dict = dictMap.get(item.word);
       return {
         word: item.word,
-        wordLang: item.wordLang,
-        phonetic: dict?.phonetic,
-        translation: dict?.translation,
+        lang: item.wordLang,
+        phonetic: dict?.phonetic ?? [],
+        translation: dict?.translation ?? '',
         type: randomAB('source', 'target', user.reverseWordBookRatio),
       } satisfies MyWordDto;
     });
@@ -87,7 +87,7 @@ export class MyWordController {
     const result = await this.myWordService.add(
       auth.userId,
       body.word,
-      Lang.EN,
+      body.lang,
       auth.clientType,
     );
     return { result };
