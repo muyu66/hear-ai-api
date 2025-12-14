@@ -107,6 +107,21 @@ export class MyWordService {
     });
   }
 
+  async getWords(userId: string, limit: number): Promise<string[]> {
+    return (
+      await this.wordBookRepository.find({
+        select: ['word'],
+        where: {
+          userId,
+        },
+        order: {
+          nextRememberedAt: 'ASC',
+        },
+        take: limit,
+      })
+    ).map((item) => item.word);
+  }
+
   async remember(
     userId: string,
     word: string,

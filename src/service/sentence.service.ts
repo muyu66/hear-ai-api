@@ -7,8 +7,9 @@ import { SentenceHistory } from 'src/model/sentence-history.model';
 import { Sentence } from 'src/model/sentence.model';
 import { User } from 'src/model/user.model';
 import { Tokenizer } from 'src/tool/tokenizer';
-import { randomAB } from 'src/tool/tool';
+import { calcSimilarityScore, randomAB } from 'src/tool/tool';
 import { Repository } from 'typeorm';
+import { MyWordService } from './my-word.service';
 
 @Injectable()
 export class SentenceService {
@@ -24,6 +25,7 @@ export class SentenceService {
     private sentenceRepository: Repository<Sentence>,
     @InjectRepository(SentenceHistory)
     private wordsHistoryRepository: Repository<SentenceHistory>,
+    private readonly myWordService: MyWordService,
     private readonly tokenizer: Tokenizer,
   ) {}
 
@@ -57,17 +59,28 @@ export class SentenceService {
         wordsLevel: user.wordsLevel,
       })
       .andWhere('lang = :lang', { lang })
-      .limit(20)
+      .limit(60)
       .orderBy('bad_score', 'ASC')
       .getMany();
 
-    return shuffle(models);
+    // 计算相似分
+    const myWords = await this.myWordService.getWords(user.id, 40);
+    const scoredModels = models.map((model) => {
+      const tokens = this.tokenizer.tokenize(model.words, model.lang);
+      const score = calcSimilarityScore(tokens, myWords);
+      return {
+        model,
+        _score: score,
+      };
+    });
+    scoredModels.sort((a, b) => b._score - a._score);
+
+    return shuffle(scoredModels.slice(0, 20).map((s) => s.model));
   }
 
   toSentenceDto(model: Sentence, sourceLang: Lang, user: User): SentenceDto {
-    const langKey = this.langMap[model.lang];
-    const sentence = (model[langKey] as string) ?? '';
-    const words = this.tokenizer.tokenize(sentence, model.lang);
+    // 对于最简单级别的音标，直接返回不用分词
+    const words = this.tokenizer.tokenize(model.words, model.lang);
     return {
       id: model.id,
       words,

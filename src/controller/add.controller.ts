@@ -12,6 +12,24 @@ export class AddController {
     private readonly configService: ConfigService,
   ) {}
 
+  @Get('1')
+  async add1() {
+    if (this.configService.env !== 'development') {
+      return;
+    }
+    return this.addService.addSentences(WordsLevel.NORMAL);
+  }
+
+  @Get('2')
+  async add2() {
+    if (this.configService.env !== 'development') {
+      return;
+    }
+    await this.addService.addVoices();
+    await this.addService.addAiDict();
+    await this.addService.addDictVoices();
+  }
+
   @Get('sentences')
   async addSentences() {
     if (this.configService.env !== 'development') {

@@ -90,3 +90,42 @@ export function calculateActiveLevel(logins: Date[]): number {
 
   return Math.round(Math.min(100, Math.max(0, finalScore)));
 }
+
+function buildSimilarityFreqMap(words: string[]) {
+  const map = new Map<string, number>();
+  for (const w of words) {
+    map.set(w, (map.get(w) ?? 0) + 1);
+  }
+  return map;
+}
+
+function calcSimilarityHitInfo(sentenceTokens: string[], myWords: string[]) {
+  const sentenceMap = buildSimilarityFreqMap(sentenceTokens);
+
+  let hitCount = 0;
+  let weightedFreq = 0;
+
+  for (const w of myWords) {
+    const freq = sentenceMap.get(w);
+    if (freq) {
+      hitCount++;
+      weightedFreq += Math.min(freq, 2);
+    }
+  }
+
+  return { hitCount, weightedFreq };
+}
+
+export function calcSimilarityScore(words: string[], myWords: string[]) {
+  const { hitCount, weightedFreq } = calcSimilarityHitInfo(words, myWords);
+
+  if (hitCount === 0) return 0;
+
+  const hitRatio = hitCount / myWords.length;
+  const density = hitCount / words.length;
+  const freqScore = weightedFreq / myWords.length;
+
+  const score = 0.5 * hitRatio + 0.3 * density + 0.2 * freqScore;
+
+  return Number(score.toFixed(4));
+}

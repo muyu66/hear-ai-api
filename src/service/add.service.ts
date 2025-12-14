@@ -175,11 +175,14 @@ export class AddService {
 
       this.logger.debug(`准备分词 offset=${offset} ...`);
 
-      const en = sentenceModels
-        .map((sentenceModel) => sentenceModel.en)
+      const en = _(sentenceModels)
+        .filter((s) => s.lang === Lang.EN)
+        .map((s) => s.words.toLowerCase())
         .join(' ');
-      const ja = sentenceModels
-        .map((sentenceModel) => sentenceModel.ja)
+
+      const ja = _(sentenceModels)
+        .filter((s) => s.lang === Lang.JA)
+        .map((s) => s.words)
         .join(' ');
 
       // 根据语言选择分词器
@@ -191,6 +194,13 @@ export class AddService {
         { words: enWords, lang: Lang.EN },
         { words: jaWords, lang: Lang.JA },
       ]) {
+        if (words == null || words.length === 0) {
+          this.logger.debug(
+            `跳过，没有需要获取的${lang}单词 单词数=${words.length} offset=${offset} ...`,
+          );
+          continue;
+        }
+
         // 查询已存在的词
         const existWords = await this.aiDictRepository.find({
           where: { word: In(words), lang },

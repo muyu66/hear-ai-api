@@ -38,6 +38,8 @@ import { AlgorithmModule } from './tool/algorithm/algorithm.module';
 import { VoiceAliRequest } from './tool/voice/voice-ali-request';
 import { VoiceMurfRequest } from './tool/voice/voice-murf-request';
 import { Tokenizer } from './tool/tokenizer';
+import { System } from './model/system.model';
+import { SystemController } from './controller/system.controller';
 
 @Module({
   imports: [
@@ -73,6 +75,7 @@ import { Tokenizer } from './tool/tokenizer';
       UserLoginHistory,
       SentencePronunciation,
       DictPronunciation,
+      System,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -86,6 +89,7 @@ import { Tokenizer } from './tool/tokenizer';
     }),
   ],
   controllers: [
+    SystemController,
     SentenceController,
     DictController,
     AuthController,
