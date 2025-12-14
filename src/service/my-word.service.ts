@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import dayjs from 'dayjs';
 import { MyWordSummaryDto } from 'src/dto/my-word.dto';
@@ -9,6 +14,7 @@ import { WordBook } from 'src/model/word-book.model';
 import { Between, LessThanOrEqual, Repository } from 'typeorm';
 import { AlgorithmService } from './algorithm.service';
 import { AuthService } from './auth.service';
+import { isEnglishWord } from 'src/tool/tool';
 
 @Injectable()
 export class MyWordService {
@@ -178,6 +184,10 @@ export class MyWordService {
   }
 
   async add(userId: string, word: string, wordLang: Lang, from: string) {
+    if (wordLang === Lang.EN && !isEnglishWord(word)) {
+      throw new BadRequestException('单词格式错误');
+    }
+
     const user = await this.authService.getUserProfile(userId);
     if (!user) {
       return false;

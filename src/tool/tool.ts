@@ -129,3 +129,7 @@ export function calcSimilarityScore(words: string[], myWords: string[]) {
 
   return Number(score.toFixed(4));
 }
+
+export function isEnglishWord(word: string): boolean {
+  return /^[a-zA-Z0-9]+$/.test(word);
+}

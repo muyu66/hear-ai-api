@@ -187,8 +187,8 @@ export class AuthService {
       throw new UnauthorizedException('微信授权失败');
     }
 
-    const user = await this.userRepository.findOneBy({
-      id: userId,
+    const user = await this.userRepository.findOne({
+      where: [{ id: userId }, { wechatOpenid: openid }],
     });
     if (!user) {
       throw new NotFoundException('用户不存在');
